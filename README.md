@@ -25,9 +25,9 @@ __Please note__: all steps need to be executed from base folder of repositories.
 2) start project
 
     ```bash
-    java -jar application/target/application-0.0.1-SNAPSHOT.jar
+    java -jar target/dave-adapter-0.0.1-SNAPSHOT.jar
     ```
 
 Once all steps ran successfully application will be reachable with the following coordinates:
 
-* swagger under <http://localhost:8081/urbalytix/swagger-ui/>
+* swagger under <http://localhost:8088/urbalytix/swagger-ui/>
