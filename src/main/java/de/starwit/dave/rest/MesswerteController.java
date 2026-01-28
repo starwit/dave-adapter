@@ -26,8 +26,6 @@ public class MesswerteController implements MesswerteApi{
     public ResponseEntity<IntervalResponseDto> getIntervalle(@RequestBody MesswertRequestDto request) {
         IntervalResponseDto irdto = new IntervalResponseDto();
         irdto = createMockIntervalResponse().getBody();
-        irdto.setMeanOfSummedUpMessquerschnitteForEachIntervalOverMesstage(getMockIntervals());
-        irdto.setIncludedMeasuringDays(5);
         //
         return ResponseEntity.ok(irdto);
     }
@@ -38,7 +36,7 @@ public class MesswerteController implements MesswerteApi{
         return ResponseEntity.ok(new TagesaggregatResponseDto());
     }
 
-        protected static ResponseEntity<IntervalResponseDto> createMockIntervalResponse() {
+    protected static ResponseEntity<IntervalResponseDto> createMockIntervalResponse() {
         // Mock IntervalResponseDto for testing
         IntervalResponseDto mockResponse = new IntervalResponseDto();
 
