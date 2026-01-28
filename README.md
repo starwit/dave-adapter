@@ -8,8 +8,6 @@ __Prerequisites__
 * Java JDK 21 or later
 * Maven 3
 * PostgreSQL (available for development via docker-compose scripts)
-* Keycloak for authentication (optional)
-* `vision-api` maven repository setup (see https://github.com/starwit/vision-api?tab=readme-ov-file#java--maven for guidance)
 
 See section [neccessary infra](#run-necessary-infra) for how to run necessary components with Docker Compose.
 
