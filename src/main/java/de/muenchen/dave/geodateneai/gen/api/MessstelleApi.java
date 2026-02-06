@@ -10,24 +10,15 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.NativeWebRequest;
 
-import de.muenchen.dave.geodateneai.gen.model.InformationResponseDto;
 import de.muenchen.dave.geodateneai.gen.model.MessstelleDto;
 import de.muenchen.dave.geodateneai.gen.model.UnauffaelligerTagDto;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Generated;
 import jakarta.validation.Valid;
@@ -39,61 +30,9 @@ import jakarta.validation.constraints.NotNull;
 public interface MessstelleApi {
 
     Optional<NativeWebRequest> getRequest();
-
-    /**
-     * GET /messstelle : Holt alle relevanten Messstellen.
-     *
-     * @return Messstellen erfolgreich abgefragt. (status code 200)
-     *         or Bei der Erstellung oder Durchführung des Requests ist ein Fehler aufgetreten. (status code 500)
-     */
-    @Operation(
-        operationId = "getMessstellen",
-        summary = "Holt alle relevanten Messstellen.",
-        tags = { "Messstelle" },
-        responses = {
-            @ApiResponse(responseCode = "200", description = "Messstellen erfolgreich abgefragt.", content = {
-                @Content(mediaType = "application/hal+json", array = @ArraySchema(schema = @Schema(implementation = MessstelleDto.class)))
-            }),
-            @ApiResponse(responseCode = "500", description = "Bei der Erstellung oder Durchführung des Requests ist ein Fehler aufgetreten.", content = {
-                @Content(mediaType = "application/hal+json", schema = @Schema(implementation = InformationResponseDto.class))
-            })
-        }
-    )
-    @RequestMapping(
-        method = RequestMethod.GET,
-        value = "/messstelle",
-        produces = { "application/hal+json" }
-    )
     
     ResponseEntity<List<MessstelleDto>> getMessstellen();
 
-
-    /**
-     * GET /messstelle/unauffaellige-tage-for-each-messstelle : Gibt die unauffälligen Tage für jede existierende Messstelle im gegebenen Zeitraum zurück.
-     *
-     * @param startDate  (required)
-     * @param endDate  (required)
-     * @return Bei der Erstellung oder Durchführung des Requests ist ein Fehler aufgetreten. (status code 500)
-     *         or Unauffällige Tage erfolgreich abgefragt. (status code 200)
-     */
-    @Operation(
-        operationId = "getUnauffaelligeTageForEachMessstelle",
-        summary = "Gibt die unauffälligen Tage für jede existierende Messstelle im gegebenen Zeitraum zurück.",
-        tags = { "Messstelle" },
-        responses = {
-            @ApiResponse(responseCode = "500", description = "Bei der Erstellung oder Durchführung des Requests ist ein Fehler aufgetreten.", content = {
-                @Content(mediaType = "application/hal+json", schema = @Schema(implementation = InformationResponseDto.class))
-            }),
-            @ApiResponse(responseCode = "200", description = "Unauffällige Tage erfolgreich abgefragt.", content = {
-                @Content(mediaType = "application/hal+json", array = @ArraySchema(schema = @Schema(implementation = UnauffaelligerTagDto.class)))
-            })
-        }
-    )
-    @RequestMapping(
-        method = RequestMethod.GET,
-        value = "/messstelle/unauffaellige-tage-for-each-messstelle",
-        produces = { "application/hal+json" }
-    )
     
     ResponseEntity<List<UnauffaelligerTagDto>> getUnauffaelligeTageForEachMessstelle(
         @NotNull @Parameter(name = "start-date", description = "", required = true, in = ParameterIn.QUERY) @Valid @RequestParam(value = "start-date", required = true) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,

@@ -1,0 +1,28 @@
+replicaCount: 1
+
+image:
+  repository: starwitorg/dave-adapter
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ${project.version}
+
+app:
+  context_path: ""
+  update_frequency: 10000
+
+service:
+  port: 8080
+
+analytics_db:
+  url: jdbc:postgresql://localhost:5432/analytics
+  username: analytics
+  password: analytics
+
+# extraEnv: |
+#   - name: JAVA_TOOL_OPTIONS
+#     value: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000
+#   - name: LOGGING_LEVEL_ROOT
+#     value: DEBUG
+
+autoscaling:
+  enabled: false

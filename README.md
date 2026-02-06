@@ -1,4 +1,4 @@
-# dave-adapter
+# Dave Adapter
 Adapter to get values from analytics database for traffic analysis in dave
 
 ## How to Build
@@ -28,4 +28,4 @@ __Please note__: all steps need to be executed from base folder of repositories.
 
 Once all steps ran successfully application will be reachable with the following coordinates:
 
-* swagger under <http://localhost:8088/urbalytix/swagger-ui/>
+* swagger under <http://localhost:8088/swagger-ui/>

@@ -10,20 +10,13 @@ import java.util.Optional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.context.request.NativeWebRequest;
 
-import de.muenchen.dave.geodateneai.gen.model.InformationResponseDto;
 import de.muenchen.dave.geodateneai.gen.model.IntervalResponseDto;
 import de.muenchen.dave.geodateneai.gen.model.MesswertRequestDto;
 import de.muenchen.dave.geodateneai.gen.model.TagesaggregatRequestDto;
 import de.muenchen.dave.geodateneai.gen.model.TagesaggregatResponseDto;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Generated;
 import jakarta.validation.Valid;
@@ -37,64 +30,10 @@ public interface MesswerteApi {
         return Optional.empty();
     }
 
-    /**
-     * POST /messwerte/intervals : Extrahiert die Intervalle und führt eine Aggregation, Summierung und Durchschnittsbildung auf die Intervalle durch. Zum einen wird der Durchschnitt für jeden Messtag je Messquerschnitt der Messstelle über alle Tagesintervalle gebildet.Und zum anderen der Durchschnitt für jeden Messtag je Interval über die selektierten Messquerschnitte.
-     *
-     * @param messwertRequestDto  (required)
-     * @return Bei der Erstellung oder Durchführung des Requests ist ein Fehler aufgetreten. (status code 500)
-     *         or Intervalle erfolgreich abgefragt. (status code 200)
-     */
-    @Operation(
-        operationId = "getIntervalle",
-        summary = "Extrahiert die Intervalle und führt eine Aggregation, Summierung und Durchschnittsbildung auf die Intervalle durch. Zum einen wird der Durchschnitt für jeden Messtag je Messquerschnitt der Messstelle über alle Tagesintervalle gebildet.Und zum anderen der Durchschnitt für jeden Messtag je Interval über die selektierten Messquerschnitte.",
-        tags = { "Messwerte" },
-        responses = {
-            @ApiResponse(responseCode = "500", description = "Bei der Erstellung oder Durchführung des Requests ist ein Fehler aufgetreten.", content = {
-                @Content(mediaType = "application/hal+json", schema = @Schema(implementation = InformationResponseDto.class))
-            }),
-            @ApiResponse(responseCode = "200", description = "Intervalle erfolgreich abgefragt.", content = {
-                @Content(mediaType = "application/hal+json", schema = @Schema(implementation = IntervalResponseDto.class))
-            })
-        }
-    )
-    @RequestMapping(
-        method = RequestMethod.POST,
-        value = "/messwerte/intervals",
-        produces = { "application/hal+json" },
-        consumes = { "application/json" }
-    )
     
     ResponseEntity<IntervalResponseDto> getIntervalle(
         @Parameter(name = "MesswertRequestDto", description = "", required = true) @Valid @RequestBody MesswertRequestDto messwertRequestDto
     );
-
-
-    /**
-     * POST /messwerte/daily-aggregates : Extrahiert die Tagesaggregate und führt eine Durchschnittsbildung auf die Tagesaggregate pro Messquerschnitt durch.
-     *
-     * @param tagesaggregatRequestDto  (required)
-     * @return Tagesaggregate erfolgreich abgefragt. (status code 200)
-     *         or Bei der Erstellung oder Durchführung des Requests ist ein Fehler aufgetreten. (status code 500)
-     */
-    @Operation(
-        operationId = "getMeanOfDailyAggregatesPerMQ",
-        summary = "Extrahiert die Tagesaggregate und führt eine Durchschnittsbildung auf die Tagesaggregate pro Messquerschnitt durch.",
-        tags = { "Messwerte" },
-        responses = {
-            @ApiResponse(responseCode = "200", description = "Tagesaggregate erfolgreich abgefragt.", content = {
-                @Content(mediaType = "application/hal+json", schema = @Schema(implementation = TagesaggregatResponseDto.class))
-            }),
-            @ApiResponse(responseCode = "500", description = "Bei der Erstellung oder Durchführung des Requests ist ein Fehler aufgetreten.", content = {
-                @Content(mediaType = "application/hal+json", schema = @Schema(implementation = InformationResponseDto.class))
-            })
-        }
-    )
-    @RequestMapping(
-        method = RequestMethod.POST,
-        value = "/messwerte/daily-aggregates",
-        produces = { "application/hal+json" },
-        consumes = { "application/json" }
-    )
     
     ResponseEntity<TagesaggregatResponseDto> getMeanOfDailyAggregatesPerMQ(
         @Parameter(name = "TagesaggregatRequestDto", description = "", required = true) @Valid @RequestBody TagesaggregatRequestDto tagesaggregatRequestDto
