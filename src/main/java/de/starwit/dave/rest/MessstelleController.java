@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/messstelle")
+@RequestMapping(path = "${rest.base-path}/messstelle")
 public class MessstelleController implements MessstelleApi {
 
     @GetMapping

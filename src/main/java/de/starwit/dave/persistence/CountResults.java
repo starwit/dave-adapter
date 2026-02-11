@@ -6,10 +6,9 @@ public class CountResults {
 
     Instant time;
     long count;
-    String route;
+    String nameFrom;
+    String nameTo;
     long objectClassId;
-    int daveFromRoute;
-    int daveToRoute;
 
     public Instant getTime() {
         return time;
@@ -27,12 +26,20 @@ public class CountResults {
         this.count = count;
     }
 
-    public String getRoute() {
-        return route;
+    public String getNameFrom() {
+        return nameFrom;
     }
 
-    public void setRoute(String route) {
-        this.route = route;
+    public void setNameFrom(String nameFrom) {
+        this.nameFrom = nameFrom;
+    }
+
+    public String getNameTo() {
+        return nameTo;
+    }
+
+    public void setNameTo(String nameTo) {
+        this.nameTo = nameTo;
     }
 
     public long getObjectClassId() {
@@ -43,25 +50,8 @@ public class CountResults {
         this.objectClassId = objectClassId;
     }
 
-    public int getDaveFromRoute() {
-        return daveFromRoute;
-    }
-
-    public void setDaveFromRoute(int daveRoute) {
-        this.daveFromRoute = daveRoute;
-    }
-
-    public int getDaveToRoute() {
-        return daveToRoute;
-    }
-
-    public void setDaveToRoute(int daveToRoute) {
-        this.daveToRoute = daveToRoute;
-    }
-
     @Override
     public String toString() {
-        return "CountResults [time=" + time + ", count=" + count + ", route=" + route + ", objectClassId="
-                + objectClassId + "]";
+        return "CountResults [count=" + count + ",\nnameFrom=" + nameFrom + ", \nnameTo=" + nameTo + ", \nobjectClassId=" + objectClassId + ", \ntime=" + time + "]\n";
     }
 }

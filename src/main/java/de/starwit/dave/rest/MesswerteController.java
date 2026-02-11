@@ -21,7 +21,7 @@ import de.muenchen.dave.geodateneai.gen.model.TagesaggregatRequestDto;
 import de.muenchen.dave.geodateneai.gen.model.TagesaggregatResponseDto;
 
 @RestController
-@RequestMapping("/messwerte")
+@RequestMapping(path = "${rest.base-path}/messwerte")
 public class MesswerteController implements MesswerteApi {
 
     static Random r = new Random();
