@@ -1,5 +1,17 @@
 # Dave Adapter
-Adapter to get values from analytics database for traffic analysis in dave
+Adapter to get values from analytics database for traffic analysis in DAVe. It runs periodically and adds new data to a defined DAVe instance.
+
+## Concept
+
+In traffic statistics possible directions on intersections needs to be addressable unambiguously. 
+
+In [DAVe](https://opensource.muenchen.de/de/software/dave.html) directions are defined as shown in the following table. Top side is pointing north.
+
+|DAVe directions| Mapping Example|
+|-------|----------|
+|![](doc/dave-directions.jpg)|<pre><code class="language-json">[<br>  {<br>    "observationAreaId": "9",<br>    "daveCountingId": "339f992e-0925-4f6d-9e75-099bc520ad2c",<br>    "intersectionMapping": {<br>        "dave-meckauer-nord" : "1",<br>        "dave-meckauer-ost" : "2",<br>        "dave-meckauer-sued" : "3",<br>        "dave-meckauer-west" : "4",<br>        "5" : "",<br>        "6" : "",<br>        "7" : "",<br>        "8" : ""<br>    }<br>  }<br>]</code></pre>|
+
+Second column shows an example, how measurement identifiers are mapped to intersection legs in DAVe.
 
 ## How to Build
 
