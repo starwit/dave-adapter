@@ -1,9 +1,13 @@
 package de.starwit.dave.service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +25,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import de.starwit.dave.dto.CountResultPerType;
 import de.starwit.dave.dto.MeasureMapping;
 import de.starwit.dave.persistence.AnalyticsRepository;
 import de.starwit.dave.persistence.CountResults;
@@ -76,7 +81,7 @@ public class DataTransferService {
             return;
         }
         log.info("Transferring data...");
-        Map<String, List<CountResults>> countResults = getData();
+        Map<String, List<CountResultPerType>> countResults = getData();
         log.debug("Data to transfer: " + countResults.toString());
 
         countResults.keySet().forEach(k -> {
@@ -85,12 +90,12 @@ public class DataTransferService {
         });
     }
 
-    public void sendData(List<CountResults> data, String countId) {
+    public void sendData(List<CountResultPerType> data, String countId) {
         String body = createSpotsRequestBody(data, countId);
+        log.debug("Request body: " + body);
         HttpEntity<String> request = new HttpEntity<String>(body, getHeaders());
         ResponseEntity<String> response = restTemplate.exchange(daveUrl, HttpMethod.POST, request, String.class);
         log.info("Update response from DAVE: " + response.getStatusCode());
-        log.debug("Request body: " + body);
     }
 
     private HttpHeaders getHeaders() {
@@ -100,23 +105,23 @@ public class DataTransferService {
         return headers;
     }
 
-    private String createSpotsRequestBody(List<CountResults> data, String countId) {
+    private String createSpotsRequestBody(List<CountResultPerType> data, String countId) {
         StringBuilder sb = new StringBuilder();
         sb.append("[");
-        for (CountResults cr : data) {
+        for (CountResultPerType cr : data) {
             sb.append("\n{");
             sb.append("\"zaehlungId\": \"" + countId + "\",\n");
-            sb.append("\"startUhrzeit\": \"" + cr.getTime().toString() + "\",\n");
-            sb.append("\"endeUhrzeit\": \"" + cr.getTime().toString() + "\",\n");
-            sb.append("\"pkw\": " + cr.getCount() + ",\n");
-            sb.append("\"lkw\": 0,\n");
+            sb.append("\"startUhrzeit\": \"" + cr.getStart() + "\",\n");
+            sb.append("\"endeUhrzeit\": \"" + cr.getEnd() + "\",\n");
+            sb.append("\"pkw\": " + cr.getPkw() + ",\n");
+            sb.append("\"lkw\": " + cr.getLkw() + ",\n");
             sb.append("\"lastzuege\": 0,\n");
-            sb.append("\"busse\": 0,\n");
-            sb.append("\"kraftraeder\": 0,\n");
-            sb.append("\"fahrradfahrer\": 0,\n");
-            sb.append("\"fussgaenger\": 0,\n");
-            sb.append("\"von\": " + cr.getNameFrom() + ",\n");
-            sb.append("\"nach\": " + cr.getNameTo() + " \n");
+            sb.append("\"busse\": " + cr.getBusse() + ",\n");
+            sb.append("\"kraftraeder\": " + cr.getKraftraeder() + ",\n");
+            sb.append("\"fahrradfahrer\": " + cr.getFahrradfahrer() + ",\n");
+            sb.append("\"fussgaenger\": " + cr.getFussgaenger() + ",\n");
+            sb.append("\"von\": " + cr.getFrom() + ",\n");
+            sb.append("\"nach\": " + cr.getTo() + " \n");
             sb.append("},");
         }
         if (data.size() > 0) {
@@ -126,21 +131,79 @@ public class DataTransferService {
         return sb.toString();
     }
 
-    private Map<String, List<CountResults>> getData() {
-        Map<String, List<CountResults>> result = new HashMap<>();
+    private Map<String, List<CountResultPerType>> getData() {
+        Map<String, List<CountResultPerType>> result = new HashMap<>();
 
         for (MeasureMapping mm : measureMappings) {
             List<CountResults> cr = analyticsRepository.getCountings(Long.parseLong(mm.getObservationAreaId()));
             log.debug("Data from analytics repository: " + cr.toString());
-            for (CountResults c : cr) {
-                c.setNameFrom(mm.getIntersectionMapping().get(c.getNameFrom()));
-                c.setNameTo(mm.getIntersectionMapping().get(c.getNameTo()));
+
+            List<CountResultPerType> convertedToRow = mapToRowResult(cr, Instant.now().minus(Duration.ofMinutes(15)), Instant.now());
+            for (CountResultPerType c : convertedToRow) {
+                c.setFrom(mm.getIntersectionMapping().get(c.getFrom()));
+                c.setTo(mm.getIntersectionMapping().get(c.getTo()));
             }
-            result.put(mm.getDaveCountingId(), cr);
+            log.debug("Converted data to DAVe format: " + convertedToRow.toString());
+            result.put(mm.getDaveCountingId(), convertedToRow);
         }
 
         return result;
     }
+
+    private List<CountResultPerType> mapToRowResult(List<CountResults> data, Instant start, Instant end) {
+        List<CountResultPerType> result = new ArrayList<>();
+
+        Map<Instant, List<CountResults>> map = new HashMap<>();
+        for (CountResults cr : data) {
+            if (!map.containsKey(cr.getTime())) {
+                map.put(cr.getTime(), new ArrayList<>());
+            }
+            map.get(cr.getTime()).add(cr);
+        }
+
+        for (Instant time : map.keySet()) {
+            List<CountResults> crs = map.get(time);
+            Set<String> allRoutes = new HashSet<>();
+            for (CountResults countResult : crs) {
+                allRoutes.add(countResult.getNameFrom() + "->" + countResult.getNameTo());
+            }
+            
+            for (String route : allRoutes) {
+                int pkw = 0;
+                int lkw = 0;
+                int busse = 0;
+                int kraftraeder = 0;
+                int fahrradfahrer = 0;
+                int fussgaenger = 0;
+
+                for (CountResults countResult : crs) {
+                    if ((countResult.getNameFrom() + "->" + countResult.getNameTo()).equals(route)) {
+                        if (countResult.getObjectClassId() == 2) {
+                            pkw += countResult.getCount();
+                        } else if (countResult.getObjectClassId() == 7) {
+                            lkw += countResult.getCount();
+                        } else if (countResult.getObjectClassId() == 5) {
+                            busse += countResult.getCount();
+                        } else if (countResult.getObjectClassId() == 3) {
+                            kraftraeder += countResult.getCount();
+                        } else if (countResult.getObjectClassId() == 1) {
+                            fahrradfahrer += countResult.getCount();
+                        } else if (countResult.getObjectClassId() == 0) {
+                            fussgaenger += countResult.getCount();
+                        }
+                    }
+                }
+
+                String[] routes = route.split("->");
+                CountResultPerType crpt = new CountResultPerType(start, end, routes[0], routes[1], pkw, lkw, busse, kraftraeder, fahrradfahrer, fussgaenger);
+                result.add(crpt);
+            }
+
+            
+        }
+
+        return result;
+    }    
 
     public List<MeasureMapping> getMeasureMappings() {
         return measureMappings;

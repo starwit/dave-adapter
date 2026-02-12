@@ -3,7 +3,11 @@ package de.starwit.dave.persistence;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +15,7 @@ import org.springframework.stereotype.Repository;
 
 import org.springframework.transaction.annotation.Transactional;
 
+import de.starwit.dave.dto.CountResultPerType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
@@ -26,14 +31,16 @@ public class AnalyticsRepository {
     
     String query = """
                 select
-                    time_bucket_gapfill('15 minutes', r.max_time) as time,
+                    time_bucket('15 minutes', r.max_time) as time,
                     count(r.object_id),
+                    r.object_class_id,
                     r.name_from,
                     r.name_to
                 from (
                     select 
                         observation_area_id,
                         object_id,
+                        object_class_id,
                         first_value(l.crossing_time) over w_time as min_time,
                         last_value(l.crossing_time) over w_time as max_time,
                         first_value(m.name) over w_time as name_from,
@@ -51,15 +58,15 @@ public class AnalyticsRepository {
                 where r.max_time > :date and r.max_time < NOW()
                     and r.name_from <> r.name_to
                     and r.dir_from = 'in' and r.dir_to = 'out'
-                group by r.name_from, r.name_to, time
+                group by r.object_class_id, r.name_from, r.name_to, time
                 order by time;           
             """;
-    
     public List<CountResults> getCountings(long observationAreaId) {
         List<CountResults> countResults = new ArrayList<CountResults>();
 
-        var timeslot = Instant.now().minus((Duration.ofMinutes(15)));
-        Query nQuery = entityManager.createNativeQuery(query).setParameter("date", timeslot).setParameter("observationAreaId", observationAreaId);
+        Instant end = Instant.now();
+        Instant start = end.minus(Duration.ofMinutes(15));
+        Query nQuery = entityManager.createNativeQuery(query).setParameter("date", start).setParameter("observationAreaId", observationAreaId);
         List<Object[]> result = nQuery.getResultList();
         
         for (Object[] r : result) {
@@ -68,20 +75,19 @@ public class AnalyticsRepository {
             if(r[1] != null) {
                 count = ((Number) r[1]).longValue();
             }
-
-            String nameFrom = (String) r[2];
-            String nameTo = (String) r[3];
+            int objectClassId = ((Number) r[2]).intValue();
+            String nameFrom = (String) r[3];
+            String nameTo = (String) r[4];
 
             CountResults cr = new CountResults();
             cr.setTime(time);
             cr.setNameFrom(nameFrom);
             cr.setNameTo(nameTo);
             cr.setCount(count);
-            cr.setObjectClassId(2);
+            cr.setObjectClassId(objectClassId);
             countResults.add(cr);
         }
-
+        
         return countResults;
-    }
-    
+    }    
 }
