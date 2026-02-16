@@ -5,13 +5,31 @@ Adapter to get values from analytics database for traffic analysis in DAVe. It r
 
 In traffic statistics possible directions on intersections needs to be addressable unambiguously. 
 
-In [DAVe](https://opensource.muenchen.de/de/software/dave.html) directions are defined as shown in the following table. Top side is pointing north.
+In [DAVe](https://opensource.muenchen.de/de/software/dave.html) directions are defined as shown in the following table. Top side is pointing north. Following image shows an example for a configured intersection counting. 
 
-|DAVe directions| Mapping Example|
-|-------|----------|
-|![](doc/dave-directions.jpg)|<pre><code class="language-json">[<br>  {<br>    "observationAreaId": "9",<br>    "daveCountingId": "339f992e-0925-4f6d-9e75-099bc520ad2c",<br>    "intersectionMapping": {<br>        "dave-meckauer-nord" : "1",<br>        "dave-meckauer-ost" : "2",<br>        "dave-meckauer-sued" : "3",<br>        "dave-meckauer-west" : "4",<br>        "5" : "",<br>        "6" : "",<br>        "7" : "",<br>        "8" : ""<br>    }<br>  }<br>]</code></pre>|
+![](doc/dave-directions.jpg)
 
-Second column shows an example, how measurement identifiers are mapped to intersection legs in DAVe.
+The for active directions can then be mapped like so:
+```json
+[
+  {
+    "observationAreaId": "9", //id for data source
+    "daveCountingId": "339f992e-0925-4f6d-9e75-099bc520ad2c", //id in DAVe 
+    "intersectionMapping": {
+        //map id strings to each activated intersection
+        "dave-meckauer-nordost" : "1",
+        "dave-meckauer-nordwest" : "2",
+        "dave-meckauer-sued" : "3",
+        "dave-meckauer-ost" : "4",
+        "5" : "",
+        "6" : "",
+        "7" : "",
+        "8" : ""
+    }
+  }
+]
+```
+
 
 ## How to Build
 
