@@ -197,9 +197,7 @@ public class DataTransferService {
                 String[] routes = route.split("->");
                 CountResultPerType crpt = new CountResultPerType(start, end, routes[0], routes[1], pkw, lkw, busse, kraftraeder, fahrradfahrer, fussgaenger);
                 result.add(crpt);
-            }
-
-            
+            }          
         }
 
         return result;
