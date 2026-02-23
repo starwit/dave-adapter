@@ -1,5 +1,7 @@
 package de.starwit.dave.service;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -14,14 +16,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -50,6 +46,9 @@ public class DataTransferService {
     @Value("${app.test:false}")
     private boolean testMode;
 
+    @Value("${app.mapping:sampleMapping.json}")
+    private String mappingFileLocation;
+
     private List<MeasureMapping> measureMappings = new ArrayList<>();
 
     @PostConstruct
@@ -63,6 +62,21 @@ public class DataTransferService {
                 log.info("Loaded measure mappings: " + measureMappings.toString());
             } catch (Exception e) {
                 log.error("Error loading sample mapping: " + e.getMessage());
+            }
+        } else {
+            log.info("Initializing with configured mapping file");
+            File mappingFile= new File(mappingFileLocation);
+            if(mappingFile.exists() && mappingFile.isFile() && mappingFile.canRead()) {
+                try {
+                    MeasureMapping[] mapping = new ObjectMapper().readValue(mappingFile, MeasureMapping[].class);
+                    measureMappings = List.of(mapping);
+                } catch (IOException e) {
+                    log.error("Error loading mapping file: " + e.getMessage());
+                    active = false;
+                }
+            } else {
+                log.error("Mapping file does not exist or cannot be read: " + mappingFileLocation);
+                active = false;
             }
         }
     }

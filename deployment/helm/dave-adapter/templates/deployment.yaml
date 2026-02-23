@@ -53,6 +53,8 @@ spec:
             - name: APP_AUTH_PASSWORD
               value: {{ .Values.app.auth.password }}
             {{- end }}
+            - name: APP_MAPPING
+              value: "/app/config/{{ .Values.app.mapping.file }}"
             {{- with .Values.extraEnv }}
             {{- tpl . $ | nindent 12 }}
             {{- end }}
@@ -74,6 +76,10 @@ spec:
             periodSeconds: 5
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: mapping-config
+              mountPath: /app/config
+              readOnly: true
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -86,3 +92,7 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+        - name: mapping-config
+          configMap:
+            name: {{ include "dave-adapter.fullname" . }}-mapping
