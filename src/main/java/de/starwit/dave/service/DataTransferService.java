@@ -1,5 +1,7 @@
 package de.starwit.dave.service;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -14,14 +16,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -40,21 +36,18 @@ public class DataTransferService {
     AnalyticsRepository analyticsRepository;
 
     @Autowired
-    private RestTemplate restTemplate;
+    AuthService authService;
 
     boolean active = true;
 
     @Value("${app.dave.url:http://localhost:8080/detector/saveLatestDetections}")
     private String daveUrl;
 
-    @Value("${app.dave.auth:true}")
-    private boolean daveAuth;
-
-    @Value("${app.dave.auth.token:someToken}")
-    private String daveToken;
-
     @Value("${app.test:false}")
     private boolean testMode;
+
+    @Value("${app.mapping:sampleMapping.json}")
+    private String mappingFileLocation;
 
     private List<MeasureMapping> measureMappings = new ArrayList<>();
 
@@ -70,17 +63,34 @@ public class DataTransferService {
             } catch (Exception e) {
                 log.error("Error loading sample mapping: " + e.getMessage());
             }
+        } else {
+            log.info("Initializing with configured mapping file");
+            File mappingFile= new File(mappingFileLocation);
+            if(mappingFile.exists() && mappingFile.isFile() && mappingFile.canRead()) {
+                try {
+                    MeasureMapping[] mapping = new ObjectMapper().readValue(mappingFile, MeasureMapping[].class);
+                    measureMappings = List.of(mapping);
+                } catch (IOException e) {
+                    log.error("Error loading mapping file: " + e.getMessage());
+                    active = false;
+                }
+            } else {
+                log.error("Mapping file does not exist or cannot be read: " + mappingFileLocation);
+                active = false;
+            }
         }
     }
 
     @Scheduled(fixedRateString = "${app.update_frequency}")
     public void transferData() {
         log.debug("Using this measurement mapping: " + measureMappings.toString());
+
         if (!active) {
             log.info("Data transfer is not active. Skipping data transfer.");
             return;
         }
         log.info("Transferring data...");
+        
         Map<String, List<CountResultPerType>> countResults = getData();
         log.debug("Data to transfer: " + countResults.toString());
 
@@ -92,17 +102,8 @@ public class DataTransferService {
 
     public void sendData(List<CountResultPerType> data, String countId) {
         String body = createSpotsRequestBody(data, countId);
-        log.debug("Request body: " + body);
-        HttpEntity<String> request = new HttpEntity<String>(body, getHeaders());
-        ResponseEntity<String> response = restTemplate.exchange(daveUrl, HttpMethod.POST, request, String.class);
-        log.info("Update response from DAVE: " + response.getStatusCode());
-    }
-
-    private HttpHeaders getHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        // headers.set("Authorization","Bearer " + token);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        return headers;
+        String response = authService.sendData(body, daveUrl);
+        log.debug(response);
     }
 
     private String createSpotsRequestBody(List<CountResultPerType> data, String countId) {

@@ -43,6 +43,20 @@ spec:
               value: {{ .Values.analytics_db.username | quote }}
             - name: SPRING_DATASOURCE_PASSWORD
               value: {{ .Values.analytics_db.password | quote }}
+            {{- if .Values.app.auth.enabled }}
+            - name: APP_AUTH_TOKENURL
+              value: {{ .Values.app.auth.tokenurl }}
+            - name: APP_AUTH_CLIENTID
+              value: {{ .Values.app.auth.clientid }}
+            - name: APP_AUTH_USERNAME
+              value: {{ .Values.app.auth.username }}
+            - name: APP_AUTH_PASSWORD
+              value: {{ .Values.app.auth.password }}
+            {{- end }}
+            - name: APP_DAVE_URL
+              value: {{ .Values.app.dave_url }}
+            - name: APP_MAPPING
+              value: "/app/config/{{ .Values.app.mapping.file }}"
             {{- with .Values.extraEnv }}
             {{- tpl . $ | nindent 12 }}
             {{- end }}
@@ -64,6 +78,10 @@ spec:
             periodSeconds: 5
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: mapping-config
+              mountPath: /app/config
+              readOnly: true
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -76,3 +94,7 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+        - name: mapping-config
+          configMap:
+            name: {{ include "dave-adapter.fullname" . }}-mapping

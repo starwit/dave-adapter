@@ -1,0 +1,62 @@
+# Dave Adapter Helm Chart
+
+## Configuration
+
+The following table lists the configurable parameters of the Dave Adapter chart and their default values.
+
+### App parameters
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `app.update_frequency` | Update frequency in milliseconds | `900000` |
+| `app.dave_url` | URL for DAVe backend | `http://localhost:8080/detector/save-latest-detections` |
+| `app.mapping.file` | Mapping configuration file name | `mapping.json` |
+| `app.mapping.content` | Mapping configuration content (JSON) | See values.yaml |
+| `app.auth.enabled` | Enable authentication | `true` |
+| `app.auth.tokenurl` | Authentication token URL | `https://auth.local` |
+| `app.auth.clientid` | OAuth client ID | `dave` |
+| `app.auth.username` | Authentication username | `username` |
+| `app.auth.password` | Authentication password | `password` |
+| `analytics_db.url` | Analytics database JDBC URL | `jdbc:postgresql://localhost:5432/analytics` |
+| `analytics_db.username` | Analytics database username | `analytics` |
+| `analytics_db.password` | Analytics database password | `analytics` |
+
+### Standard values
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `replicaCount` | Number of replicas | `1` |
+| `image.repository` | Image repository | `starwitorg/dave-adapter` |
+| `image.pullPolicy` | Image pull policy | `Always` |
+| `image.tag` | Image tag | `${project.version}` |
+| `service.port` | Service port | `8080` |
+| `extraEnv` | Additional environment variables (YAML list) | `nil` |
+| `autoscaling.enabled` | Enable autoscaling | `false` |
+| `app.context_path` | Application context path | `""` |
+
+## Example Usage
+
+```bash
+helm install dave-adapter ./dave-adapter \
+  --set image.tag=1.0.0 \
+  --set analytics_db.url=jdbc:postgresql://postgres:5432/analytics \
+  --set analytics_db.password=mypassword
+```
+
+## Mapping Configuration
+
+The `app.mapping.content` parameter accepts a JSON array defining observation area mappings:
+
+```json
+[
+  {
+    "observationAreaId": "9",
+    "daveCountingId": "fa6060bd-c170-40e4-9ee8-c704a526ef9d",
+    "intersectionMapping": {
+      "dave-meckauer-nordost": "1",
+      "dave-meckauer-nordwest": "2",
+      "dave-meckauer-sued": "3",
+      "dave-meckauer-ost": "4"
+    }
+  }
+]
+```

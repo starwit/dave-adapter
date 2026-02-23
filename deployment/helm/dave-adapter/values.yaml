@@ -8,7 +8,33 @@ image:
 
 app:
   context_path: ""
-  update_frequency: 10000
+  update_frequency: 900000
+  dave_url: http://localhost:8080/detector/save-latest-detections
+  mapping:
+    file: mapping.json
+    content: |
+      [
+        {
+          "observationAreaId": "9",
+          "daveCountingId": "fa6060bd-c170-40e4-9ee8-c704a526ef9d",
+          "intersectionMapping": {
+              "dave-meckauer-nordost" : "1",
+              "dave-meckauer-nordwest" : "2",
+              "dave-meckauer-sued" : "3",
+              "dave-meckauer-ost" : "4",
+              "5" : "",
+              "6" : "",
+              "7" : "",
+              "8" : ""
+          }
+        }
+      ]
+  auth: 
+    enabled: true
+    tokenurl: https://auth.local
+    clientid: dave
+    username: username
+    password: password  
 
 service:
   port: 8080
