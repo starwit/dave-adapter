@@ -43,6 +43,16 @@ spec:
               value: {{ .Values.analytics_db.username | quote }}
             - name: SPRING_DATASOURCE_PASSWORD
               value: {{ .Values.analytics_db.password | quote }}
+            {{- if .Values.app.auth.enabled }}
+            - name: APP_AUTH_TOKENURL
+              value: {{ .Values.app.auth.tokenurl }}
+            - name: APP_AUTH_CLIENTID
+              value: {{ .Values.app.auth.clientid }}
+            - name: APP_AUTH_USERNAME
+              value: {{ .Values.app.auth.username }}
+            - name: APP_AUTH_PASSWORD
+              value: {{ .Values.app.auth.password }}
+            {{- end }}
             {{- with .Values.extraEnv }}
             {{- tpl . $ | nindent 12 }}
             {{- end }}

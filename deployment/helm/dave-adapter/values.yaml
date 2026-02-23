@@ -9,6 +9,12 @@ image:
 app:
   context_path: ""
   update_frequency: 10000
+  auth: 
+    enabled: true
+    tokenurl: https://auth.local
+    clientid: dave
+    username: username
+    password: password  
 
 service:
   port: 8080

@@ -40,18 +40,12 @@ public class DataTransferService {
     AnalyticsRepository analyticsRepository;
 
     @Autowired
-    private RestTemplate restTemplate;
+    AuthService authService;
 
     boolean active = true;
 
     @Value("${app.dave.url:http://localhost:8080/detector/saveLatestDetections}")
     private String daveUrl;
-
-    @Value("${app.dave.auth:true}")
-    private boolean daveAuth;
-
-    @Value("${app.dave.auth.token:someToken}")
-    private String daveToken;
 
     @Value("${app.test:false}")
     private boolean testMode;
@@ -76,11 +70,13 @@ public class DataTransferService {
     @Scheduled(fixedRateString = "${app.update_frequency}")
     public void transferData() {
         log.debug("Using this measurement mapping: " + measureMappings.toString());
+
         if (!active) {
             log.info("Data transfer is not active. Skipping data transfer.");
             return;
         }
         log.info("Transferring data...");
+        
         Map<String, List<CountResultPerType>> countResults = getData();
         log.debug("Data to transfer: " + countResults.toString());
 
@@ -92,17 +88,8 @@ public class DataTransferService {
 
     public void sendData(List<CountResultPerType> data, String countId) {
         String body = createSpotsRequestBody(data, countId);
-        log.debug("Request body: " + body);
-        HttpEntity<String> request = new HttpEntity<String>(body, getHeaders());
-        ResponseEntity<String> response = restTemplate.exchange(daveUrl, HttpMethod.POST, request, String.class);
-        log.info("Update response from DAVE: " + response.getStatusCode());
-    }
-
-    private HttpHeaders getHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        // headers.set("Authorization","Bearer " + token);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        return headers;
+        String response = authService.sendData(body, daveUrl);
+        log.debug(response);
     }
 
     private String createSpotsRequestBody(List<CountResultPerType> data, String countId) {
