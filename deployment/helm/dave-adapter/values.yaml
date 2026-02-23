@@ -8,7 +8,8 @@ image:
 
 app:
   context_path: ""
-  update_frequency: 10000
+  update_frequency: 900000
+  dave_url: http://localhost:8080/detector/save-latest-detections
   mapping:
     file: mapping.json
     content: |

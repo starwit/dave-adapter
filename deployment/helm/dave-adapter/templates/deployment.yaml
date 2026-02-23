@@ -53,6 +53,8 @@ spec:
             - name: APP_AUTH_PASSWORD
               value: {{ .Values.app.auth.password }}
             {{- end }}
+            - name: APP_DAVE_URL
+              value: {{ .Values.app.dave_url }}
             - name: APP_MAPPING
               value: "/app/config/{{ .Values.app.mapping.file }}"
             {{- with .Values.extraEnv }}
