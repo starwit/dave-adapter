@@ -89,6 +89,7 @@ public class AuthService {
         if(token == null) {
             getAccessToken();
         } else {
+            log.debug("Test if token is too old");
             LocalDateTime now = LocalDateTime.now();
             long diff = ChronoUnit.MILLIS.between(tokenTimeStamp, now);
             log.debug("Token age " + diff);
