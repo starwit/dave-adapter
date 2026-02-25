@@ -40,7 +40,7 @@ public class DataTransferService {
 
     boolean active = true;
 
-    @Value("${app.dave.url:http://localhost:8080/detector/saveLatestDetections}")
+    @Value("${app.dave.url:http://localhost:8080/detector/save-latest-detections}")
     private String daveUrl;
 
     @Value("${app.test:false}")
