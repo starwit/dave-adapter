@@ -2,6 +2,7 @@ package de.starwit.dave.persistence;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,23 +45,25 @@ public class AnalyticsRepository {
                         count(object_id) over w_time as idx
                     from linecrossing l 
                         join metadata m on l.metadata_id = m.id
-                    where l.crossing_time >= :date
+                    where l.crossing_time >= :startTime
                         and observation_area_id = :observationAreaId
                     window 
                         w_time as (partition by object_id order by l.crossing_time asc)
                 ) r
-                where r.max_time > :date and r.max_time < NOW()
+                where r.max_time > :startTime and r.max_time < :endTime
                     and r.name_from <> r.name_to
                     and r.dir_from = 'in' and r.dir_to = 'out'
                 group by r.object_class_id, r.name_from, r.name_to, time
                 order by time;           
             """;
-    public List<CountResults> getCountings(long observationAreaId) {
+    public List<CountResults> getCountings(long observationAreaId, Instant start, Instant end) {
+        log.debug("Select data from " + start);
         List<CountResults> countResults = new ArrayList<CountResults>();
 
-        Instant end = Instant.now();
-        Instant start = end.minus(Duration.ofMinutes(15));
-        Query nQuery = entityManager.createNativeQuery(query).setParameter("date", start).setParameter("observationAreaId", observationAreaId);
+        Query nQuery = entityManager.createNativeQuery(query)
+            .setParameter("startTime", start)
+            .setParameter("endTime", end)
+            .setParameter("observationAreaId", observationAreaId);
         List<Object[]> result = nQuery.getResultList();
         
         for (Object[] r : result) {
@@ -81,6 +84,8 @@ public class AnalyticsRepository {
             cr.setObjectClassId(objectClassId);
             countResults.add(cr);
         }
+
+        log.debug("Analytics DB result " + countResults.toString());
         
         return countResults;
     }    

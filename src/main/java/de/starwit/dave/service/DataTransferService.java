@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,7 +41,7 @@ public class DataTransferService {
 
     boolean active = true;
 
-    @Value("${app.dave.url:http://localhost:8080/detector/saveLatestDetections}")
+    @Value("${app.dave.url:http://localhost:8080/detector/save-latest-detections}")
     private String daveUrl;
 
     @Value("${app.test:false}")
@@ -135,8 +136,18 @@ public class DataTransferService {
     private Map<String, List<CountResultPerType>> getData() {
         Map<String, List<CountResultPerType>> result = new HashMap<>();
 
+        var now = Instant.now();
+
+        // Calculate how many seconds have passed since the start of the current 15-minute block
+        long secondsInQuarter = 15 * 60; 
+        long secondsToSubtract = now.getEpochSecond() % secondsInQuarter;
+
+        // Subtract those seconds and clear nanoseconds
+        Instant lastQuarterEnd = now.minusSeconds(secondsToSubtract).truncatedTo(ChronoUnit.SECONDS);
+        Instant lastQuarterStart = lastQuarterEnd.minus(Duration.ofMinutes(15));
+
         for (MeasureMapping mm : measureMappings) {
-            List<CountResults> cr = analyticsRepository.getCountings(Long.parseLong(mm.getObservationAreaId()));
+            List<CountResults> cr = analyticsRepository.getCountings(Long.parseLong(mm.getObservationAreaId()), lastQuarterStart, lastQuarterEnd);
             log.debug("Data from analytics repository: " + cr.toString());
 
             List<CountResultPerType> convertedToRow = mapToRowResult(cr, Instant.now().minus(Duration.ofMinutes(15)), Instant.now());
