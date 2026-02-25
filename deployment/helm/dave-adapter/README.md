@@ -11,11 +11,6 @@ The following table lists the configurable parameters of the Dave Adapter chart 
 | `app.dave_url` | URL for DAVe backend | `http://localhost:8080/detector/save-latest-detections` |
 | `app.mapping.file` | Mapping configuration file name | `mapping.json` |
 | `app.mapping.content` | Mapping configuration content (JSON) | See values.yaml |
-| `app.auth.enabled` | Enable authentication | `true` |
-| `app.auth.tokenurl` | Authentication token URL | `https://auth.local` |
-| `app.auth.clientid` | OAuth client ID | `dave` |
-| `app.auth.username` | Authentication username | `username` |
-| `app.auth.password` | Authentication password | `password` |
 | `analytics_db.url` | Analytics database JDBC URL | `jdbc:postgresql://localhost:5432/analytics` |
 | `analytics_db.username` | Analytics database username | `analytics` |
 | `analytics_db.password` | Analytics database password | `analytics` |
@@ -32,6 +27,11 @@ The following table lists the configurable parameters of the Dave Adapter chart 
 | `extraEnv` | Additional environment variables (YAML list) | `nil` |
 | `autoscaling.enabled` | Enable autoscaling | `false` |
 | `app.context_path` | Application context path | `""` |
+| `spring.security.oauth2.client.registration.daveclient.client_id` | OAuth2 client ID | `dave_api` |
+| `spring.security.oauth2.client.registration.daveclient.client_secret` | OAuth2 client secret | `supersecret` |
+| `spring.security.oauth2.client.provider.daveprovider.token_uri` | OAuth2 token URI | `https://uri` |
+
+
 
 ## Example Usage
 
