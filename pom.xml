@@ -4,7 +4,7 @@
 
   <groupId>de.starwit</groupId>
   <artifactId>dave-adapter</artifactId>
-  <version>0.0.3-SNAPSHOT</version>
+  <version>5.0.2-SNAPSHOT</version>
 
   <name>dave-adapter</name>
   <description>Adapter to get values from analytics database for traffic analysis in dave</description>
