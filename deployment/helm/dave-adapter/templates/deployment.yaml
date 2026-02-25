@@ -44,14 +44,12 @@ spec:
             - name: SPRING_DATASOURCE_PASSWORD
               value: {{ .Values.analytics_db.password | quote }}
             {{- if .Values.app.auth.enabled }}
-            - name: APP_AUTH_TOKENURL
-              value: {{ .Values.app.auth.tokenurl }}
-            - name: APP_AUTH_CLIENTID
-              value: {{ .Values.app.auth.clientid }}
-            - name: APP_AUTH_USERNAME
-              value: {{ .Values.app.auth.username }}
-            - name: APP_AUTH_PASSWORD
-              value: {{ .Values.app.auth.password }}
+            - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DAVECLIENT_CLIENT_ID
+              value: {{ .Values.spring.security.oauth2.client.registration.daveclient.client_id }}
+            - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_DAVECLIENT_CLIENT_SECRET
+              value: {{ .Values.spring.security.oauth2.client.registration.daveclient.client_secret }}
+            - name: SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_DAVEPROVIDER_TOKEN_URI
+              value: {{ .Values.spring.security.oauth2.client.provider.daveprovider.token_uri }}
             {{- end }}
             - name: APP_DAVE_URL
               value: {{ .Values.app.dave_url }}

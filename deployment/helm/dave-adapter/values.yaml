@@ -6,6 +6,19 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ${project.version}
 
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          daveclient:
+            client_id: dave_api
+            client_secret: supersecret
+        provider:
+          daveprovider:
+            token_uri: https://uri
+
+
 app:
   context_path: ""
   update_frequency: 900000
@@ -31,10 +44,6 @@ app:
       ]
   auth: 
     enabled: true
-    tokenurl: https://auth.local
-    clientid: dave
-    username: username
-    password: password  
 
 service:
   port: 8080
