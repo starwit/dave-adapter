@@ -22,6 +22,12 @@ public class AuthService {
     @Value("${app.auth.enabled:true}")
     private boolean daveAuth;
 
+    @Value("${spring.security.oauth2.client.registration.daveclient.client-id}")
+    private String clientId;
+
+    @Value("${spring.security.oauth2.client.provider.daveprovider.token-uri}")
+    private String tokenUri;
+
     @Autowired
     private OAuth2AuthorizedClientManager authorizedClientManager;
 
@@ -34,6 +40,8 @@ public class AuthService {
         String result = "";
 
         if(daveAuth) {
+            log.info("sending data with authentication using client " + clientId + " at IdP " + tokenUri);
+
             Authentication principal = new AnonymousAuthenticationToken(
                     "key",
                     "system",
