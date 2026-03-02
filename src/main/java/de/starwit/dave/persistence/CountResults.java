@@ -1,22 +1,11 @@
 package de.starwit.dave.persistence;
 
-import java.time.Instant;
-
 public class CountResults {
 
-    Instant time;
     long count;
     String nameFrom;
     String nameTo;
     long objectClassId;
-
-    public Instant getTime() {
-        return time;
-    }
-
-    public void setTime(Instant time) {
-        this.time = time;
-    }
 
     public long getCount() {
         return count;
@@ -52,6 +41,6 @@ public class CountResults {
 
     @Override
     public String toString() {
-        return "CountResults [count=" + count + ",\nnameFrom=" + nameFrom + ", \nnameTo=" + nameTo + ", \nobjectClassId=" + objectClassId + ", \ntime=" + time + "]\n";
+        return "CountResults [count=" + count + ",\nnameFrom=" + nameFrom + ", \nnameTo=" + nameTo + ", \nobjectClassId=" + objectClassId + "]\n";
     }
 }

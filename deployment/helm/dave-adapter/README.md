@@ -7,7 +7,8 @@ The following table lists the configurable parameters of the Dave Adapter chart 
 ### App parameters
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `app.update_frequency` | Update frequency in milliseconds | `900000` |
+| `app.update_interval` | Update interval (`Duration` representation) | `15m` |
+| `app.lookback_duration` | Duration before the interval start where data is considered (`Duration` representation) | `1m` |
 | `app.dave_url` | URL for DAVe backend | `http://localhost:8080/detector/save-latest-detections` |
 | `app.mapping.file` | Mapping configuration file name | `mapping.json` |
 | `app.mapping.content` | Mapping configuration content (JSON) | See values.yaml |

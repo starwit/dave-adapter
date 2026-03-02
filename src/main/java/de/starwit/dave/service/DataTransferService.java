@@ -50,6 +50,9 @@ public class DataTransferService {
     @Value("${app.mapping:sampleMapping.json}")
     private String mappingFileLocation;
 
+    @Value("${app.lookback_duration:1m}")
+    private Duration lookbackDuration;
+
     private List<MeasureMapping> measureMappings = new ArrayList<>();
 
     @PostConstruct
@@ -73,16 +76,14 @@ public class DataTransferService {
                     measureMappings = List.of(mapping);
                 } catch (IOException e) {
                     log.error("Error loading mapping file: " + e.getMessage());
-                    active = false;
                 }
             } else {
-                log.error("Mapping file does not exist or cannot be read: " + mappingFileLocation);
-                active = false;
+                log.error("Mapping file does not exist or cannot be read at: " + mappingFileLocation);
             }
         }
     }
 
-    @Scheduled(fixedRateString = "${app.update_frequency}")
+    @Scheduled(fixedRateString = "${app.update_interval}")
     public void transferData() {
         log.debug("Using this measurement mapping: " + measureMappings.toString());
 
@@ -91,7 +92,7 @@ public class DataTransferService {
             return;
         }
         log.info("Transferring data...");
-        
+
         Map<String, List<CountResultPerType>> countResults = getData();
         log.debug("Data to transfer: " + countResults.toString());
 
@@ -139,18 +140,19 @@ public class DataTransferService {
         var now = Instant.now();
 
         // Calculate how many seconds have passed since the start of the current 15-minute block
-        long secondsInQuarter = 15 * 60; 
+        long secondsInQuarter = 15 * 60;
         long secondsToSubtract = now.getEpochSecond() % secondsInQuarter;
 
-        // Subtract those seconds and clear nanoseconds
+        // Subtract those seconds and clear nanoseconds to get the aligned interval boundaries
         Instant lastQuarterEnd = now.minusSeconds(secondsToSubtract).truncatedTo(ChronoUnit.SECONDS);
         Instant lastQuarterStart = lastQuarterEnd.minus(Duration.ofMinutes(15));
+        Instant innerStart = lastQuarterStart.minus(lookbackDuration);
 
         for (MeasureMapping mm : measureMappings) {
-            List<CountResults> cr = analyticsRepository.getCountings(Long.parseLong(mm.getObservationAreaId()), lastQuarterStart, lastQuarterEnd);
+            List<CountResults> cr = analyticsRepository.getCountings(Long.parseLong(mm.getObservationAreaId()), innerStart, lastQuarterStart, lastQuarterEnd);
             log.debug("Data from analytics repository: " + cr.toString());
 
-            List<CountResultPerType> convertedToRow = mapToRowResult(cr, Instant.now().minus(Duration.ofMinutes(15)), Instant.now());
+            List<CountResultPerType> convertedToRow = mapToRowResult(cr, lastQuarterStart, lastQuarterEnd);
             for (CountResultPerType c : convertedToRow) {
                 c.setFrom(mm.getIntersectionMapping().get(c.getFrom()));
                 c.setTo(mm.getIntersectionMapping().get(c.getTo()));
@@ -165,55 +167,44 @@ public class DataTransferService {
     private List<CountResultPerType> mapToRowResult(List<CountResults> data, Instant start, Instant end) {
         List<CountResultPerType> result = new ArrayList<>();
 
-        Map<Instant, List<CountResults>> map = new HashMap<>();
-        for (CountResults cr : data) {
-            if (!map.containsKey(cr.getTime())) {
-                map.put(cr.getTime(), new ArrayList<>());
-            }
-            map.get(cr.getTime()).add(cr);
+        Set<String> allRoutes = new HashSet<>();
+        for (CountResults countResult : data) {
+            allRoutes.add(countResult.getNameFrom() + "->" + countResult.getNameTo());
         }
 
-        for (Instant time : map.keySet()) {
-            List<CountResults> crs = map.get(time);
-            Set<String> allRoutes = new HashSet<>();
-            for (CountResults countResult : crs) {
-                allRoutes.add(countResult.getNameFrom() + "->" + countResult.getNameTo());
-            }
-            
-            for (String route : allRoutes) {
-                int pkw = 0;
-                int lkw = 0;
-                int busse = 0;
-                int kraftraeder = 0;
-                int fahrradfahrer = 0;
-                int fussgaenger = 0;
+        for (String route : allRoutes) {
+            int pkw = 0;
+            int lkw = 0;
+            int busse = 0;
+            int kraftraeder = 0;
+            int fahrradfahrer = 0;
+            int fussgaenger = 0;
 
-                for (CountResults countResult : crs) {
-                    if ((countResult.getNameFrom() + "->" + countResult.getNameTo()).equals(route)) {
-                        if (countResult.getObjectClassId() == 2) {
-                            pkw += countResult.getCount();
-                        } else if (countResult.getObjectClassId() == 7) {
-                            lkw += countResult.getCount();
-                        } else if (countResult.getObjectClassId() == 5) {
-                            busse += countResult.getCount();
-                        } else if (countResult.getObjectClassId() == 3) {
-                            kraftraeder += countResult.getCount();
-                        } else if (countResult.getObjectClassId() == 1) {
-                            fahrradfahrer += countResult.getCount();
-                        } else if (countResult.getObjectClassId() == 0) {
-                            fussgaenger += countResult.getCount();
-                        }
+            for (CountResults countResult : data) {
+                if ((countResult.getNameFrom() + "->" + countResult.getNameTo()).equals(route)) {
+                    if (countResult.getObjectClassId() == 2) {
+                        pkw += countResult.getCount();
+                    } else if (countResult.getObjectClassId() == 7) {
+                        lkw += countResult.getCount();
+                    } else if (countResult.getObjectClassId() == 5) {
+                        busse += countResult.getCount();
+                    } else if (countResult.getObjectClassId() == 3) {
+                        kraftraeder += countResult.getCount();
+                    } else if (countResult.getObjectClassId() == 1) {
+                        fahrradfahrer += countResult.getCount();
+                    } else if (countResult.getObjectClassId() == 0) {
+                        fussgaenger += countResult.getCount();
                     }
                 }
+            }
 
-                String[] routes = route.split("->");
-                CountResultPerType crpt = new CountResultPerType(start, end, routes[0], routes[1], pkw, lkw, busse, kraftraeder, fahrradfahrer, fussgaenger);
-                result.add(crpt);
-            }          
+            String[] routes = route.split("->");
+            CountResultPerType crpt = new CountResultPerType(start, end, routes[0], routes[1], pkw, lkw, busse, kraftraeder, fahrradfahrer, fussgaenger);
+            result.add(crpt);
         }
 
         return result;
-    }    
+    }
 
     public List<MeasureMapping> getMeasureMappings() {
         return measureMappings;
