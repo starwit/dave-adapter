@@ -69,7 +69,7 @@ public class DataTransferService {
             }
         } else {
             log.info("Initializing with configured mapping file");
-            File mappingFile= new File(mappingFileLocation);
+            File mappingFile = new File(mappingFileLocation);
             if(mappingFile.exists() && mappingFile.isFile() && mappingFile.canRead()) {
                 try {
                     MeasureMapping[] mapping = new ObjectMapper().readValue(mappingFile, MeasureMapping[].class);
@@ -93,22 +93,22 @@ public class DataTransferService {
         }
         log.info("Transferring data...");
 
-        Map<String, List<CountResultPerType>> countResults = getData();
+        Map<String, List<CountResultPerType>> countResults = LoadMeasuredData();
         log.debug("Data to transfer: " + countResults.toString());
 
         countResults.keySet().forEach(k -> {
             log.info("Transferring data for counting ID: " + k);
-            sendData(countResults.get(k), k);
+            prepareAndSendData(countResults.get(k), k);
         });
     }
 
-    public void sendData(List<CountResultPerType> data, String countId) {
-        String body = createSpotsRequestBody(data, countId);
+    public void prepareAndSendData(List<CountResultPerType> data, String countId) {
+        String body = serializeToJSON(data, countId);
         String response = authService.sendData(body, daveUrl);
         log.debug(response);
     }
 
-    private String createSpotsRequestBody(List<CountResultPerType> data, String countId) {
+    private String serializeToJSON(List<CountResultPerType> data, String countId) {
         StringBuilder sb = new StringBuilder();
         sb.append("[");
         for (CountResultPerType cr : data) {
@@ -134,7 +134,7 @@ public class DataTransferService {
         return sb.toString();
     }
 
-    private Map<String, List<CountResultPerType>> getData() {
+    private Map<String, List<CountResultPerType>> LoadMeasuredData() {
         Map<String, List<CountResultPerType>> result = new HashMap<>();
 
         var now = Instant.now();
@@ -158,10 +158,30 @@ public class DataTransferService {
                 c.setTo(mm.getIntersectionMapping().get(c.getTo()));
             }
             log.debug("Converted data to DAVe format: " + convertedToRow.toString());
+            if (convertedToRow.isEmpty()) {
+                log.info("No data for counting ID " + mm.getDaveCountingId() + " in the last interval. Creating empty data.");
+                convertedToRow = createEmptyData(mm.getDaveCountingId(), lastQuarterStart, lastQuarterEnd);
+            }
             result.put(mm.getDaveCountingId(), convertedToRow);
         }
 
         return result;
+    }
+
+    private List<CountResultPerType> createEmptyData(String countId, Instant start, Instant end) {
+        List<CountResultPerType> emptyData = new ArrayList<>();
+        if(measureMappings.get(0) != null) {
+            var mappings = measureMappings.get(0).getIntersectionMapping();
+            Set<String> keys = mappings.keySet();
+            if(keys.size() != 0) {
+                String first = keys.iterator().next();
+                String daveDirection = mappings.get(first);
+                CountResultPerType emptyResult = new CountResultPerType(start, end, daveDirection, daveDirection, 0, 0, 0, 0, 0, 0);
+                emptyData.add(emptyResult);                
+            }
+        }
+        
+        return emptyData;
     }
 
     private List<CountResultPerType> mapToRowResult(List<CountResults> data, Instant start, Instant end) {
