@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -65,6 +66,12 @@ public class AuthService {
                     .header("Accept", "*/*")
                     .body(body)
                     .retrieve()
+                    .onStatus(HttpStatusCode::is4xxClientError, (request, resp) -> {
+                        log.warn("Client error while sending data to DAVe: " + resp.getStatusCode());
+                    })
+                    .onStatus(HttpStatusCode::is5xxServerError, (request, resp) -> {
+                        log.warn("Server error while sending data to DAVe: " + resp.getStatusCode());
+                    })
                     .toEntity(String.class);
 
             log.info("Send update to DAVe with response code " + response.getStatusCode());
@@ -77,6 +84,12 @@ public class AuthService {
                     .header("Accept", "*/*")
                     .body(body)
                     .retrieve()
+                    .onStatus(HttpStatusCode::is4xxClientError, (request, resp) -> {
+                        log.warn("Client error while sending data to DAVe: " + resp.getStatusCode());
+                    })
+                    .onStatus(HttpStatusCode::is5xxServerError, (request, resp) -> {
+                        log.warn("Server error while sending data to DAVe: " + resp.getStatusCode());
+                    })
                     .toEntity(String.class);
             log.info("Send update to DAVe with response code " + response.getStatusCode());
 
@@ -85,5 +98,4 @@ public class AuthService {
 
         return result;
     }
-
 }
