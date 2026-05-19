@@ -74,6 +74,7 @@ public class DataTransferService {
                 try {
                     MeasureMapping[] mapping = new ObjectMapper().readValue(mappingFile, MeasureMapping[].class);
                     measureMappings = List.of(mapping);
+                    log.debug(measureMappings.toString());
                 } catch (IOException e) {
                     log.error("Error loading mapping file: " + e.getMessage());
                 }
@@ -104,6 +105,11 @@ public class DataTransferService {
 
     public void prepareAndSendData(List<CountResultPerType> data, String countId) {
         String body = serializeToJSON(data, countId);
+        log.debug("Serialized data to JSON: " + body);
+        if(body.equals("[]")) {
+            log.info("No data to send for counting ID " + countId + ". Skipping transfer.");
+            return;
+        }
         String response = authService.sendData(body, daveUrl);
         log.debug(response);
     }
@@ -112,6 +118,10 @@ public class DataTransferService {
         StringBuilder sb = new StringBuilder();
         sb.append("[");
         for (CountResultPerType cr : data) {
+            if(cr.getFrom() == null || cr.getTo() == null) {
+                log.warn("Skipping entry with missing from/to mapping: " + cr.toString());
+                continue;
+            }
             sb.append("\n{");
             sb.append("\"zaehlungId\": \"" + countId + "\",\n");
             sb.append("\"startUhrzeit\": \"" + cr.getStart() + "\",\n");
@@ -175,13 +185,22 @@ public class DataTransferService {
             Set<String> keys = mappings.keySet();
             if(keys.size() != 0) {
                 String first = keys.iterator().next();
-                String daveDirection = mappings.get(first);
+                String daveDirection = findFirstNonEmptyMapping(first, mappings);
                 CountResultPerType emptyResult = new CountResultPerType(start, end, daveDirection, daveDirection, 0, 0, 0, 0, 0, 0);
                 emptyData.add(emptyResult);                
             }
         }
         
         return emptyData;
+    }
+
+    private String findFirstNonEmptyMapping(String first, Map<String, String> mappings) {
+        for (Map.Entry<String, String> entry : mappings.entrySet()) {
+            if (!entry.getValue().isEmpty()) {
+                return entry.getValue();
+            }
+        }
+        return "";
     }
 
     private List<CountResultPerType> mapToRowResult(List<CountResults> data, Instant start, Instant end) {
