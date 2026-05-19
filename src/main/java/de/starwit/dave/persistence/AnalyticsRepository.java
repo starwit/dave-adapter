@@ -81,8 +81,6 @@ public class AnalyticsRepository {
             countResults.add(cr);
         }
 
-        log.debug("Analytics DB result " + countResults.toString());
-
         return countResults;
     }
 }
