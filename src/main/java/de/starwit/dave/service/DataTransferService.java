@@ -1,12 +1,10 @@
 package de.starwit.dave.service;
 
 import java.io.File;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,7 +24,6 @@ import de.starwit.dave.dto.MeasureMapping;
 import de.starwit.dave.persistence.AnalyticsRepository;
 import de.starwit.dave.persistence.CountResults;
 import jakarta.annotation.PostConstruct;
-import jakarta.persistence.criteria.CriteriaBuilder.In;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
