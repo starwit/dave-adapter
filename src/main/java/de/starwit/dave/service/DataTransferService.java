@@ -201,7 +201,7 @@ public class DataTransferService {
 
         Set<String> allRoutes = new HashSet<>();
         for (CountResults countResult : data) {
-            allRoutes.add(countResult.getNameFrom() + "->" + countResult.getNameTo());
+            allRoutes.add(countResult.getCompassDirFrom() + "->" + countResult.getCompassDirTo());
         }
 
         for (String route : allRoutes) {
@@ -213,7 +213,7 @@ public class DataTransferService {
             int fussgaenger = 0;
 
             for (CountResults countResult : data) {
-                if ((countResult.getNameFrom() + "->" + countResult.getNameTo()).equals(route)) {
+                if ((countResult.getCompassDirFrom() + "->" + countResult.getCompassDirTo()).equals(route)) {
                     if (countResult.getObjectClassId() == 2) {
                         pkw += countResult.getCount();
                     } else if (countResult.getObjectClassId() == 7) {
