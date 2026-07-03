@@ -20,13 +20,13 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import de.starwit.dave.dto.CountResultPerType;
 import de.starwit.dave.dto.MeasureMapping;
 import de.starwit.dave.persistence.AnalyticsRepository;
 import de.starwit.dave.persistence.CountResults;
 import jakarta.annotation.PostConstruct;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 public class DataTransferService {
@@ -38,6 +38,9 @@ public class DataTransferService {
 
     @Autowired
     AuthService authService;
+
+    @Autowired
+    private JsonMapper mapper;
 
     boolean active = true;
 
@@ -60,7 +63,7 @@ public class DataTransferService {
         if (testMode) {
             try {
                 log.info("Initializing DataTransferService with sample mapping.");
-                var loadedMappings = new ObjectMapper().readValue(
+                var loadedMappings = mapper.readValue(
                         new ClassPathResource("sampleMapping.json").getInputStream(), MeasureMapping[].class);
                 measureMappings = List.of(loadedMappings);
                 log.info("Loaded measure mappings: " + measureMappings.toString());
@@ -70,12 +73,12 @@ public class DataTransferService {
         } else {
             log.info("Initializing with configured mapping file");
             File mappingFile = new File(mappingFileLocation);
-            if(mappingFile.exists() && mappingFile.isFile() && mappingFile.canRead()) {
+            if (mappingFile.exists() && mappingFile.isFile() && mappingFile.canRead()) {
                 try {
-                    MeasureMapping[] mapping = new ObjectMapper().readValue(mappingFile, MeasureMapping[].class);
+                    MeasureMapping[] mapping = mapper.readValue(mappingFile, MeasureMapping[].class);
                     measureMappings = List.of(mapping);
                     log.debug(measureMappings.toString());
-                } catch (IOException e) {
+                } catch (JacksonException e) {
                     log.error("Error loading mapping file: " + e.getMessage());
                 }
             } else {
@@ -106,7 +109,7 @@ public class DataTransferService {
     public void prepareAndSendData(List<CountResultPerType> data, String countId) {
         String body = serializeToJSON(data, countId);
         log.debug("Serialized data to JSON: " + body);
-        if(body.equals("[]")) {
+        if (body.equals("[]")) {
             log.info("No data to send for counting ID " + countId + ". Skipping transfer.");
             return;
         }
@@ -115,33 +118,19 @@ public class DataTransferService {
     }
 
     private String serializeToJSON(List<CountResultPerType> data, String countId) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[");
+        List<String> filteredData = new ArrayList<>();
         for (CountResultPerType cr : data) {
-            if(cr.getFrom() == null || cr.getTo() == null) {
+            if (cr.getFrom() == null || cr.getTo() == null) {
                 log.warn("Skipping entry with missing from/to mapping: " + cr.toString());
                 continue;
             }
-            sb.append("\n{");
-            sb.append("\"zaehlungId\": \"" + countId + "\",\n");
-            sb.append("\"startUhrzeit\": \"" + cr.getStart() + "\",\n");
-            sb.append("\"endeUhrzeit\": \"" + cr.getEnd() + "\",\n");
-            sb.append("\"pkw\": " + cr.getPkw() + ",\n");
-            sb.append("\"lkw\": " + cr.getLkw() + ",\n");
-            sb.append("\"lastzuege\": 0,\n");
-            sb.append("\"busse\": " + cr.getBusse() + ",\n");
-            sb.append("\"kraftraeder\": " + cr.getKraftraeder() + ",\n");
-            sb.append("\"fahrradfahrer\": " + cr.getFahrradfahrer() + ",\n");
-            sb.append("\"fussgaenger\": " + cr.getFussgaenger() + ",\n");
-            sb.append("\"von\": " + cr.getFrom() + ",\n");
-            sb.append("\"nach\": " + cr.getTo() + " \n");
-            sb.append("},");
+            try {
+                filteredData.add(mapper.writeValueAsString(cr));
+            } catch (JacksonException e) {
+                log.warn("Error serializing data to JSON: " + e.getMessage());
+            }
         }
-        if (data.size() > 0) {
-            sb.deleteCharAt(sb.length() - 1);
-        }
-        sb.append("]");
-        return sb.toString();
+        return "[" + String.join(",", filteredData) + "]";
     }
 
     private Map<String, List<CountResultPerType>> LoadMeasuredData() {
@@ -149,30 +138,36 @@ public class DataTransferService {
 
         var now = Instant.now();
 
-        // Calculate how many seconds have passed since the start of the current 15-minute block
+        // Calculate how many seconds have passed since the start of the current
+        // 15-minute block
         long secondsInQuarter = 15 * 60;
         long secondsToSubtract = now.getEpochSecond() % secondsInQuarter;
 
-        // Subtract those seconds and clear nanoseconds to get the aligned interval boundaries
+        // Subtract those seconds and clear nanoseconds to get the aligned interval
+        // boundaries
         Instant lastQuarterEnd = now.minusSeconds(secondsToSubtract).truncatedTo(ChronoUnit.SECONDS);
         Instant lastQuarterStart = lastQuarterEnd.minus(Duration.ofMinutes(15));
         Instant innerStart = lastQuarterStart.minus(lookbackDuration);
 
-        for (MeasureMapping mm : measureMappings) {
-            List<CountResults> cr = analyticsRepository.getCountings(Long.parseLong(mm.getObservationAreaId()), innerStart, lastQuarterStart, lastQuarterEnd);
+        for (MeasureMapping measureMapping : measureMappings) {
+            List<CountResults> cr = analyticsRepository.getCountings(
+                    Long.parseLong(measureMapping.getObservationAreaId()), innerStart, lastQuarterStart,
+                    lastQuarterEnd);
             log.debug("Data from analytics repository: " + cr.toString());
 
-            List<CountResultPerType> convertedToRow = mapToRowResult(cr, lastQuarterStart, lastQuarterEnd);
+            List<CountResultPerType> convertedToRow = mapToRowResult(measureMapping.getDaveCountingId(), cr,
+                    lastQuarterStart, lastQuarterEnd);
             for (CountResultPerType c : convertedToRow) {
-                c.setFrom(mm.getIntersectionMapping().get(c.getFrom()));
-                c.setTo(mm.getIntersectionMapping().get(c.getTo()));
+                c.setFrom(measureMapping.getIntersectionMapping().get(c.getFrom()));
+                c.setTo(measureMapping.getIntersectionMapping().get(c.getTo()));
             }
             log.debug("Converted data to DAVe format: " + convertedToRow.toString());
             if (convertedToRow.isEmpty()) {
-                log.info("No data for counting ID " + mm.getDaveCountingId() + " in the last interval. Creating empty data.");
-                convertedToRow = createEmptyData(mm.getDaveCountingId(), lastQuarterStart, lastQuarterEnd);
+                log.info("No data for counting ID " + measureMapping.getDaveCountingId()
+                        + " in the last interval. Creating empty data.");
+                convertedToRow = createEmptyData(measureMapping.getDaveCountingId(), lastQuarterStart, lastQuarterEnd);
             }
-            result.put(mm.getDaveCountingId(), convertedToRow);
+            result.put(measureMapping.getDaveCountingId(), convertedToRow);
         }
 
         return result;
@@ -180,17 +175,18 @@ public class DataTransferService {
 
     private List<CountResultPerType> createEmptyData(String countId, Instant start, Instant end) {
         List<CountResultPerType> emptyData = new ArrayList<>();
-        if(measureMappings.get(0) != null) {
+        if (measureMappings.get(0) != null) {
             var mappings = measureMappings.get(0).getIntersectionMapping();
             Set<String> keys = mappings.keySet();
-            if(keys.size() != 0) {
+            if (keys.size() != 0) {
                 String first = keys.iterator().next();
                 String daveDirection = findFirstNonEmptyMapping(first, mappings);
-                CountResultPerType emptyResult = new CountResultPerType(start, end, daveDirection, daveDirection, 0, 0, 0, 0, 0, 0);
-                emptyData.add(emptyResult);                
+                CountResultPerType emptyResult = new CountResultPerType(countId, start, end, daveDirection,
+                        daveDirection, 0, 0, 0, 0, 0, 0);
+                emptyData.add(emptyResult);
             }
         }
-        
+
         return emptyData;
     }
 
@@ -203,7 +199,8 @@ public class DataTransferService {
         return "";
     }
 
-    private List<CountResultPerType> mapToRowResult(List<CountResults> data, Instant start, Instant end) {
+    private List<CountResultPerType> mapToRowResult(String countingId, List<CountResults> data, Instant start,
+            Instant end) {
         List<CountResultPerType> result = new ArrayList<>();
 
         Set<String> allRoutes = new HashSet<>();
@@ -238,7 +235,8 @@ public class DataTransferService {
             }
 
             String[] routes = route.split("->");
-            CountResultPerType crpt = new CountResultPerType(start, end, routes[0], routes[1], pkw, lkw, busse, kraftraeder, fahrradfahrer, fussgaenger);
+            CountResultPerType crpt = new CountResultPerType(countingId, start, end, routes[0], routes[1], pkw, lkw,
+                    busse, kraftraeder, fahrradfahrer, fussgaenger);
             result.add(crpt);
         }
 

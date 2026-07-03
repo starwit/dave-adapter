@@ -2,19 +2,45 @@ package de.starwit.dave.dto;
 
 import java.time.Instant;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class CountResultPerType {
+
+    @JsonProperty("zaehlungId")
+    private String countingId;
+
+    @JsonProperty("startUhrzeit")
     private Instant start;
+
+    @JsonProperty("endUhrzeit")
     private Instant end;
+
+    @JsonProperty("von")
     private String from;
+
+    @JsonProperty("nach")
     private String to;
+
+    @JsonProperty("pkw")
     private int pkw;
+
+    @JsonProperty("lkw")
     private int lkw;
+
+    @JsonProperty("busse")
     private int busse;
+
+    @JsonProperty("kraftraeder")
     private int kraftraeder;
+
+    @JsonProperty("fahrradfahrer")
     private int fahrradfahrer;
+
+    @JsonProperty("fussgaenger")
     private int fussgaenger;
 
-    public CountResultPerType(Instant start, Instant end, String from, String to, int pkw, int lkw, int busse, int kraftraeder, int fahrradfahrer, int fussgaenger) {
+    public CountResultPerType(String countingId, Instant start, Instant end, String from, String to, int pkw, int lkw, int busse, int kraftraeder, int fahrradfahrer, int fussgaenger) {
+        this.countingId = countingId;
         this.start = start;
         this.end = end;
         this.from = from;
@@ -25,6 +51,15 @@ public class CountResultPerType {
         this.kraftraeder = kraftraeder;
         this.fahrradfahrer = fahrradfahrer;
         this.fussgaenger = fussgaenger;
+    }
+
+        
+    public String getCountingId() {
+        return countingId;
+    }
+
+    public void setCountingId(String countingId) {
+        this.countingId = countingId;
     }
 
     public Instant getStart() {
