@@ -1,10 +1,15 @@
 # Dave Adapter
-Adapter to get values from analytics database for traffic analysis in DAVe. It runs periodically and adds new data to a defined DAVe instance.
+Adapter to get values from Starwit's observatory analytics database for traffic analysis in DAVe. It runs periodically and adds new data to a defined DAVe instance.
 
 ## Concept
 
-In traffic statistics possible directions on intersections needs to be addressable unambiguously. 
+In traffic statistics possible directions on intersections needs to be addressable unambiguously. The following image shows the environment, in which DAVe adapter is running. It accesses via JDBC analytics DB which is part of Starwit's Observatory Stack to collect every 15 minutes latest count data.
 
+![](/doc/Architecture.svg)
+
+Collected data are then mapped to DAVe format and send to detector interface.
+
+### Mapping Concept
 In [DAVe](https://opensource.muenchen.de/de/software/dave.html) directions are defined as shown in the following table. Top side is pointing north. Following image shows an example for a configured intersection counting. 
 
 ![](doc/dave-directions.jpg)
@@ -29,15 +34,46 @@ The for active directions can then be mapped like so:
   }
 ]
 ```
+## Configuration
 
+Adapter is configured via [application.properties](src/main/resources/application.properties). Here are the central config items:
+
+```properties
+# data source for analytics data
+spring.datasource.hikari.connection-timeout=10000
+spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5432/analytics}
+spring.datasource.username=${DB_USERNAME:analytics}
+spring.datasource.password=${DB_PASSWORD:analytics}
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# test mode
+app.test=false
+# how often shall data be transfered?
+app.update_interval=15m
+# lookup window to match 15 minute intervall
+app.lookback_duration=1m
+# DAVe endpoint
+app.dave.url=http://localhost:8080/detector/save-latest-detections
+# central mapping file
+app.mapping=./sampleMapping.jso
+# if true adapter gets auth token for requests to DAVe 
+app.auth.enabled=true
+
+# Config to access protected DAVe instance
+spring.security.oauth2.client.registration.daveclient.provider=daveprovider
+spring.security.oauth2.client.registration.daveclient.client-id=client_id
+spring.security.oauth2.client.registration.daveclient.client-secret=secret
+spring.security.oauth2.client.registration.daveclient.authorization-grant-type=client_credentials
+spring.security.oauth2.client.registration.daveclient.scope=openid, profile, email
+spring.security.oauth2.client.provider.daveprovider.token-uri=https://uri
+```
 
 ## How to Build
 
 __Prerequisites__ 
 
-* Java JDK 21 or later
+* Java JDK 25 or later
 * Maven 3
-* PostgreSQL (available for development via docker-compose scripts)
 
 See section [neccessary infra](#run-necessary-infra) for how to run necessary components with Docker Compose.
 
@@ -59,3 +95,16 @@ __Please note__: all steps need to be executed from base folder of repositories.
 Once all steps ran successfully application will be reachable with the following coordinates:
 
 * swagger under <http://localhost:8088/swagger-ui/>
+
+## Run necessary Infra
+
+In order to develop adapter needs the following components:
+* [Observatory/Analytics DB](https://github.com/starwit/observatory) - source data
+* [DAVe Backend](https://github.com/starwit/dave-backend) - target environment
+
+Optionally the following components are helpful for testing:
+* [DAVe Frontend](https://github.com/starwit/dave-frontend) - display data
+* [Observatory Config](https://github.com/starwit/observatory-config) - get active counting configurations
+* [Starwit Awareness Engine/Valkey](https://github.com/starwit/starwit-awareness-engine) - get live counting data
+* Keycloak - test authentication
+
