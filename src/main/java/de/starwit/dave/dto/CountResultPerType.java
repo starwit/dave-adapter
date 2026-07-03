@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import jakarta.validation.constraints.NotNull;
+
 public class CountResultPerType {
 
     @JsonProperty("zaehlungId")
@@ -12,14 +14,16 @@ public class CountResultPerType {
     @JsonProperty("startUhrzeit")
     private Instant start;
 
-    @JsonProperty("endUhrzeit")
+    @JsonProperty("endeUhrzeit")
     private Instant end;
 
+    @NotNull
     @JsonProperty("von")
-    private String from;
+    private Integer from;
 
+    @NotNull
     @JsonProperty("nach")
-    private String to;
+    private Integer to;
 
     @JsonProperty("pkw")
     private int pkw;
@@ -39,7 +43,8 @@ public class CountResultPerType {
     @JsonProperty("fussgaenger")
     private int fussgaenger;
 
-    public CountResultPerType(String countingId, Instant start, Instant end, String from, String to, int pkw, int lkw, int busse, int kraftraeder, int fahrradfahrer, int fussgaenger) {
+    public CountResultPerType(String countingId, Instant start, Instant end, Integer from, Integer to, int pkw, int lkw,
+            int busse, int kraftraeder, int fahrradfahrer, int fussgaenger) {
         this.countingId = countingId;
         this.start = start;
         this.end = end;
@@ -53,7 +58,6 @@ public class CountResultPerType {
         this.fussgaenger = fussgaenger;
     }
 
-        
     public String getCountingId() {
         return countingId;
     }
@@ -78,19 +82,19 @@ public class CountResultPerType {
         this.end = end;
     }
 
-    public String getFrom() {
+    public Integer getFrom() {
         return from;
     }
 
-    public void setFrom(String from) {
+    public void setFrom(Integer from) {
         this.from = from;
     }
 
-    public String getTo() {
+    public Integer getTo() {
         return to;
     }
 
-    public void setTo(String to) {
+    public void setTo(Integer to) {
         this.to = to;
     }
 

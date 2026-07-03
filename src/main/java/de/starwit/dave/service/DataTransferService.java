@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,6 +26,7 @@ import de.starwit.dave.dto.MeasureMapping;
 import de.starwit.dave.persistence.AnalyticsRepository;
 import de.starwit.dave.persistence.CountResults;
 import jakarta.annotation.PostConstruct;
+import jakarta.persistence.criteria.CriteriaBuilder.In;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -155,12 +157,8 @@ public class DataTransferService {
                     lastQuarterEnd);
             log.debug("Data from analytics repository: " + cr.toString());
 
-            List<CountResultPerType> convertedToRow = mapToRowResult(measureMapping.getDaveCountingId(), cr,
+            List<CountResultPerType> convertedToRow = mapToRowResult(measureMapping, cr,
                     lastQuarterStart, lastQuarterEnd);
-            for (CountResultPerType c : convertedToRow) {
-                c.setFrom(measureMapping.getIntersectionMapping().get(c.getFrom()));
-                c.setTo(measureMapping.getIntersectionMapping().get(c.getTo()));
-            }
             log.debug("Converted data to DAVe format: " + convertedToRow.toString());
             if (convertedToRow.isEmpty()) {
                 log.info("No data for counting ID " + measureMapping.getDaveCountingId()
@@ -180,7 +178,7 @@ public class DataTransferService {
             Set<String> keys = mappings.keySet();
             if (keys.size() != 0) {
                 String first = keys.iterator().next();
-                String daveDirection = findFirstNonEmptyMapping(first, mappings);
+                Integer daveDirection = findFirstNonEmptyMapping(first, mappings);
                 CountResultPerType emptyResult = new CountResultPerType(countId, start, end, daveDirection,
                         daveDirection, 0, 0, 0, 0, 0, 0);
                 emptyData.add(emptyResult);
@@ -190,16 +188,17 @@ public class DataTransferService {
         return emptyData;
     }
 
-    private String findFirstNonEmptyMapping(String first, Map<String, String> mappings) {
-        for (Map.Entry<String, String> entry : mappings.entrySet()) {
-            if (!entry.getValue().isEmpty()) {
+    private Integer findFirstNonEmptyMapping(String first, Map<String, Integer> mappings) {
+        for (Map.Entry<String, Integer> entry : mappings.entrySet()) {
+            if (entry.getValue() != null) {
                 return entry.getValue();
             }
         }
-        return "";
+        return null;
     }
 
-    private List<CountResultPerType> mapToRowResult(String countingId, List<CountResults> data, Instant start,
+    private List<CountResultPerType> mapToRowResult(MeasureMapping measureMapping, List<CountResults> data,
+            Instant start,
             Instant end) {
         List<CountResultPerType> result = new ArrayList<>();
 
@@ -235,7 +234,14 @@ public class DataTransferService {
             }
 
             String[] routes = route.split("->");
-            CountResultPerType crpt = new CountResultPerType(countingId, start, end, routes[0], routes[1], pkw, lkw,
+            Integer dave_von = measureMapping.getIntersectionMapping().get(routes[0]);
+            Integer dave_nach = measureMapping.getIntersectionMapping().get(routes[1]);
+            if (dave_von == null || dave_nach == null) {
+                log.warn("Skipping route with missing mapping: " + route);
+                continue;
+            }
+            CountResultPerType crpt = new CountResultPerType(measureMapping.getDaveCountingId(), start, end, dave_von,
+                    dave_nach, pkw, lkw,
                     busse, kraftraeder, fahrradfahrer, fussgaenger);
             result.add(crpt);
         }

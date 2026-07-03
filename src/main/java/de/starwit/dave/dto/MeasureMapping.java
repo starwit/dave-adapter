@@ -15,7 +15,7 @@ public class MeasureMapping {
 
     // this maps names of measurement light barriers in Observatory to the
     // corresponding intersection legs in DAVe. Format: "1" : "meckauer-nordost"
-    private Map<String, String> intersectionMapping;
+    private Map<String, Integer> intersectionMapping;
 
     public String getObservationAreaId() {
         return observationAreaId;
@@ -33,11 +33,11 @@ public class MeasureMapping {
         this.daveCountingId = daveCountingId;
     }
 
-    public Map<String, String> getIntersectionMapping() {
+    public Map<String, Integer> getIntersectionMapping() {
         return intersectionMapping;
     }
 
-    public void setIntersectionMapping(Map<String, String> intersectionMapping) {
+    public void setIntersectionMapping(Map<String, Integer> intersectionMapping) {
         this.intersectionMapping = intersectionMapping;
     }
 
