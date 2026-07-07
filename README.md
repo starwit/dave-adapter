@@ -34,6 +34,9 @@ The for active directions can then be mapped like so:
   }
 ]
 ```
+
+In the example above, `dave-meckauer-nordost` is the name of the light-barrier in observatory config which is mapped to the number of intersection-part - e.g. 1 for north. With `app.mapping` in the `application.properties`, you can define the location of your mapping file.
+
 ## Configuration
 
 Adapter is configured via [application.properties](src/main/resources/application.properties). Here are the central config items:

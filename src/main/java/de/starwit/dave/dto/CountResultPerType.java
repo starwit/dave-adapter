@@ -2,19 +2,50 @@ package de.starwit.dave.dto;
 
 import java.time.Instant;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import jakarta.validation.constraints.NotNull;
+
 public class CountResultPerType {
+
+    @JsonProperty("zaehlungId")
+    private String countingId;
+
+    @JsonProperty("startUhrzeit")
     private Instant start;
+
+    @JsonProperty("endeUhrzeit")
     private Instant end;
-    private String from;
-    private String to;
+
+    @NotNull
+    @JsonProperty("von")
+    private Integer from;
+
+    @NotNull
+    @JsonProperty("nach")
+    private Integer to;
+
+    @JsonProperty("pkw")
     private int pkw;
+
+    @JsonProperty("lkw")
     private int lkw;
+
+    @JsonProperty("busse")
     private int busse;
+
+    @JsonProperty("kraftraeder")
     private int kraftraeder;
+
+    @JsonProperty("fahrradfahrer")
     private int fahrradfahrer;
+
+    @JsonProperty("fussgaenger")
     private int fussgaenger;
 
-    public CountResultPerType(Instant start, Instant end, String from, String to, int pkw, int lkw, int busse, int kraftraeder, int fahrradfahrer, int fussgaenger) {
+    public CountResultPerType(String countingId, Instant start, Instant end, Integer from, Integer to, int pkw, int lkw,
+            int busse, int kraftraeder, int fahrradfahrer, int fussgaenger) {
+        this.countingId = countingId;
         this.start = start;
         this.end = end;
         this.from = from;
@@ -25,6 +56,14 @@ public class CountResultPerType {
         this.kraftraeder = kraftraeder;
         this.fahrradfahrer = fahrradfahrer;
         this.fussgaenger = fussgaenger;
+    }
+
+    public String getCountingId() {
+        return countingId;
+    }
+
+    public void setCountingId(String countingId) {
+        this.countingId = countingId;
     }
 
     public Instant getStart() {
@@ -43,19 +82,19 @@ public class CountResultPerType {
         this.end = end;
     }
 
-    public String getFrom() {
+    public Integer getFrom() {
         return from;
     }
 
-    public void setFrom(String from) {
+    public void setFrom(Integer from) {
         this.from = from;
     }
 
-    public String getTo() {
+    public Integer getTo() {
         return to;
     }
 
-    public void setTo(String to) {
+    public void setTo(Integer to) {
         this.to = to;
     }
 
