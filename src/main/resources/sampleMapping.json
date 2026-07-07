@@ -1,16 +1,6 @@
 [
   {
     "observationAreaId": "8",
-    "daveCountingId": "339f992e-0925-4f6d-9e75-099bc520ad2c",
-    "intersectionMapping": {
-        "dave-meckauer-nord" : "1",
-        "dave-meckauer-ost" : "2",
-        "dave-meckauer-sued" : "3",
-        "dave-meckauer-west" : "4",
-        "5" : "",
-        "6" : "",
-        "7" : "",
-        "8" : ""
-    }
+    "daveCountingId": "442984fa-3b79-4b85-ab8d-ebf5e07c5a42"
   }
 ]

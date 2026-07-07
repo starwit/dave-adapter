@@ -3,8 +3,8 @@ package de.starwit.dave.persistence;
 public class CountResults {
 
     long count;
-    String nameFrom;
-    String nameTo;
+    String compassDirFrom;
+    String compassDirTo;
     long objectClassId;
 
     public long getCount() {
@@ -15,20 +15,20 @@ public class CountResults {
         this.count = count;
     }
 
-    public String getNameFrom() {
-        return nameFrom;
+    public String getCompassDirFrom() {
+        return compassDirFrom;
     }
 
-    public void setNameFrom(String nameFrom) {
-        this.nameFrom = nameFrom;
+    public void setCompassDirFrom(String compassDirFrom) {
+        this.compassDirFrom = compassDirFrom;
     }
 
-    public String getNameTo() {
-        return nameTo;
+    public String getCompassDirTo() {
+        return compassDirTo;
     }
 
-    public void setNameTo(String nameTo) {
-        this.nameTo = nameTo;
+    public void setCompassDirTo(String compassDirTo) {
+        this.compassDirTo = compassDirTo;
     }
 
     public long getObjectClassId() {
@@ -41,6 +41,8 @@ public class CountResults {
 
     @Override
     public String toString() {
-        return "CountResults [count=" + count + ",\nnameFrom=" + nameFrom + ", \nnameTo=" + nameTo + ", \nobjectClassId=" + objectClassId + "]\n";
+        return "CountResults [count=" + count + ",\ncompassDirFrom=" + compassDirFrom + ", \ncompassDirTo="
+                + compassDirTo
+                + ", \nobjectClassId=" + objectClassId + "]\n";
     }
 }

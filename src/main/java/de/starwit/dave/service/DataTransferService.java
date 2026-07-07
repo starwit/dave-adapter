@@ -1,6 +1,6 @@
 package de.starwit.dave.service;
 
-import java.io.File;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +25,7 @@ import de.starwit.dave.persistence.AnalyticsRepository;
 import de.starwit.dave.persistence.CountResults;
 import jakarta.annotation.PostConstruct;
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 @Service
@@ -39,18 +40,18 @@ public class DataTransferService {
     AuthService authService;
 
     @Autowired
-    private JsonMapper mapper;
+    JsonMapper mapper;
 
     boolean active = true;
 
     @Value("${app.dave.url:http://localhost:8080/detector/save-latest-detections}")
     private String daveUrl;
 
-    @Value("${app.test:false}")
-    private boolean testMode;
+    @Value("${app.mapping:classpath:sampleMapping.json}")
+    private Resource mappingFileLocation;
 
-    @Value("${app.mapping:sampleMapping.json}")
-    private String mappingFileLocation;
+    @Value("${app.mapping.intersection:classpath:defaultIntersectionMapping.json}")
+    private Resource defaultIntersectionMapping;
 
     @Value("${app.lookback_duration:1m}")
     private Duration lookbackDuration;
@@ -59,30 +60,46 @@ public class DataTransferService {
 
     @PostConstruct
     private void init() {
-        if (testMode) {
-            try {
-                log.info("Initializing DataTransferService with sample mapping.");
-                var loadedMappings = mapper.readValue(
-                        new ClassPathResource("sampleMapping.json").getInputStream(), MeasureMapping[].class);
-                measureMappings = List.of(loadedMappings);
-                log.info("Loaded measure mappings: " + measureMappings.toString());
-            } catch (Exception e) {
-                log.error("Error loading sample mapping: " + e.getMessage());
+        log.info("Initializing with configured mapping file");
+        HashMap<String, Integer> defaultIntersectionMappings = initializeIntersectionMappingsFromFile();
+        initializeMappingsFromFile(defaultIntersectionMappings);
+    }
+
+    private HashMap<String, Integer> initializeIntersectionMappingsFromFile() {
+        HashMap<String, Integer> intersectionMapping = new HashMap<>();
+        if (defaultIntersectionMapping.exists()) {
+            try (var inputStream = defaultIntersectionMapping.getInputStream()) {
+                intersectionMapping.putAll(mapper.readValue(inputStream,
+                        new TypeReference<HashMap<String, Integer>>() {
+                        }));
+            } catch (IOException | JacksonException e) {
+                log.error("Error loading intersection mapping resource: " + defaultIntersectionMapping, e);
             }
         } else {
-            log.info("Initializing with configured mapping file");
-            File mappingFile = new File(mappingFileLocation);
-            if (mappingFile.exists() && mappingFile.isFile() && mappingFile.canRead()) {
-                try {
-                    MeasureMapping[] mapping = mapper.readValue(mappingFile, MeasureMapping[].class);
-                    measureMappings = List.of(mapping);
-                    log.debug(measureMappings.toString());
-                } catch (JacksonException e) {
-                    log.error("Error loading mapping file: " + e.getMessage());
+            log.error("Intersection mapping resource does not exist: " + defaultIntersectionMapping);
+        }
+        return intersectionMapping;
+    }
+
+    private void initializeMappingsFromFile(HashMap<String, Integer> defaultIntersectionMappings) {
+        if (mappingFileLocation.exists()) {
+            try (var inputStream = mappingFileLocation.getInputStream()) {
+                MeasureMapping[] mapping = mapper.readValue(inputStream, MeasureMapping[].class);
+                measureMappings = List.of(mapping);
+                for (MeasureMapping measureMapping : measureMappings) {
+                    if (measureMapping.getIntersectionMapping() == null
+                            || measureMapping.getIntersectionMapping().isEmpty()) {
+                        log.debug("No intersection mapping found for observation area ID: "
+                                + measureMapping.getObservationAreaId() + ". Using default intersection mapping.");
+                        measureMapping.setIntersectionMapping(defaultIntersectionMappings);
+                    }
                 }
-            } else {
-                log.error("Mapping file does not exist or cannot be read at: " + mappingFileLocation);
+                log.debug(measureMappings.toString());
+            } catch (IOException | JacksonException e) {
+                log.error("Error loading mapping resource: " + mappingFileLocation, e);
             }
+        } else {
+            log.error("Mapping resource does not exist: " + mappingFileLocation);
         }
     }
 
@@ -201,7 +218,7 @@ public class DataTransferService {
 
         Set<String> allRoutes = new HashSet<>();
         for (CountResults countResult : data) {
-            allRoutes.add(countResult.getNameFrom() + "->" + countResult.getNameTo());
+            allRoutes.add(countResult.getCompassDirFrom() + "->" + countResult.getCompassDirTo());
         }
 
         for (String route : allRoutes) {
@@ -213,7 +230,7 @@ public class DataTransferService {
             int fussgaenger = 0;
 
             for (CountResults countResult : data) {
-                if ((countResult.getNameFrom() + "->" + countResult.getNameTo()).equals(route)) {
+                if ((countResult.getCompassDirFrom() + "->" + countResult.getCompassDirTo()).equals(route)) {
                     if (countResult.getObjectClassId() == 2) {
                         pkw += countResult.getCount();
                     } else if (countResult.getObjectClassId() == 7) {

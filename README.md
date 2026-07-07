@@ -20,22 +20,40 @@ The for active directions can then be mapped like so:
   {
     "observationAreaId": "9", //id for data source
     "daveCountingId": "339f992e-0925-4f6d-9e75-099bc520ad2c", //id in DAVe 
+    //intersectionMappings are optional
     "intersectionMapping": {
         //map id strings to each activated intersection
-        "dave-meckauer-nordost" : "1",
-        "dave-meckauer-nordwest" : "2",
-        "dave-meckauer-sued" : "3",
-        "dave-meckauer-ost" : "4",
-        "5" : "",
-        "6" : "",
-        "7" : "",
-        "8" : ""
+        "N" : "1",
+        "E" : "2",
+        "S" : "3",
+        "W" : "4",
+        "NE": "5",
+        "SE": "6",
+        "SW": "7",
+        "NW": "8"
     }
   }
 ]
 ```
 
-In the example above, `dave-meckauer-nordost` is the name of the light-barrier in observatory config which is mapped to the number of intersection-part - e.g. 1 for north. With `app.mapping` in the `application.properties`, you can define the location of your mapping file.
+In the example above, `N` is the compass direction of the light-barrier in observatory config which is mapped to the number of intersection-part - e.g. 1 for north. With `app.mapping=file:<<your-file-location>>` in the `application.properties`, you can define the location of your mapping file.
+
+If you have a default mapping for all observation areas, you can set the json file with the property `app.mapping.intersection=file:<<your-file-location>>`. The file should look like this:
+
+```json
+{
+  "N": "1",
+  "E": "2",
+  "S": "3",
+  "W": "4",
+  "NE": "5",
+  "SE": "6",
+  "SW": "7",
+  "NW": "8"
+}
+```
+
+The example above is in the classpath and will be used if no intersection mapping is given. 
 
 ## Configuration
 
@@ -49,8 +67,6 @@ spring.datasource.username=${DB_USERNAME:analytics}
 spring.datasource.password=${DB_PASSWORD:analytics}
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
-# test mode
-app.test=false
 # how often shall data be transfered?
 app.update_interval=15m
 # lookup window to match 15 minute intervall
@@ -58,7 +74,7 @@ app.lookback_duration=1m
 # DAVe endpoint
 app.dave.url=http://localhost:8080/detector/save-latest-detections
 # central mapping file
-app.mapping=./sampleMapping.jso
+app.mapping=file:./sampleMapping.json
 # if true adapter gets auth token for requests to DAVe 
 app.auth.enabled=true
 
