@@ -54,7 +54,9 @@ spec:
             - name: APP_DAVE_URL
               value: {{ .Values.app.dave_url }}
             - name: APP_MAPPING
-              value: "/app/config/{{ .Values.app.mapping.file }}"
+              value: "file:/app/config/mapping.json"
+            - name: APP_MAPPING_INTERSECTION
+              value: {{ .Values.app.mapping.intersection | quote }}
             {{- with .Values.extraEnv }}
             {{- tpl . $ | nindent 12 }}
             {{- end }}

@@ -24,24 +24,15 @@ app:
   update_frequency: 900000
   dave_url: http://localhost:8080/detector/save-latest-detections
   mapping:
-    file: mapping.json
+    file: file:/app/config/mapping.json
     content: |
-      [
-        {
-          "observationAreaId": "9",
-          "daveCountingId": "339f992e-0925-4f6d-9e75-099bc520ad2c",
-          "intersectionMapping": {
-              "dave-meckauer-nordost" : "1",
-              "dave-meckauer-nordwest" : "2",
-              "dave-meckauer-sued" : "3",
-              "dave-meckauer-ost" : "4",
-              "5" : "",
-              "6" : "",
-              "7" : "",
-              "8" : ""
-          }
-        }
-      ]
+          [
+            {
+              "observationAreaId": "9",
+              "daveCountingId": "339f992e-0925-4f6d-9e75-099bc520ad2c"
+            }
+          ]
+    intersection: classpath:defaultIntersectionMapping.json
   auth: 
     enabled: true
 

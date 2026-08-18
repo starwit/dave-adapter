@@ -5,5 +5,5 @@ metadata:
   labels:
     {{- include "dave-adapter.labels" . | nindent 4 }}
 data:
-  {{ .Values.app.mapping.file }}: |
+  mapping.json: |
 {{ .Values.app.mapping.content | indent 4 }}
