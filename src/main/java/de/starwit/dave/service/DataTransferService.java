@@ -1,6 +1,11 @@
 package de.starwit.dave.service;
 
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -56,13 +61,99 @@ public class DataTransferService {
     @Value("${app.lookback_duration:1m}")
     private Duration lookbackDuration;
 
+    @Value("${app.transfer_state_file:./.dave-adapter-transfer-state.json}")
+    private String transferStateFile;
+
     private List<MeasureMapping> measureMappings = new ArrayList<>();
+    private final Map<String, Long> transferredIntervalEnds = new HashMap<>();
+    private final Object transferStateLock = new Object();
 
     @PostConstruct
     private void init() {
         log.info("Initializing with configured mapping file");
+        loadTransferState();
         HashMap<String, Integer> defaultIntersectionMappings = initializeIntersectionMappingsFromFile();
         initializeMappingsFromFile(defaultIntersectionMappings);
+    }
+
+    private void loadTransferState() {
+        Path statePath = Path.of(transferStateFile);
+        if (!Files.exists(statePath)) {
+            log.info("No persisted transfer state found at {}. Starting without transfer history.", statePath);
+            return;
+        }
+
+        try (var inputStream = Files.newInputStream(statePath)) {
+            Map<String, Long> loadedState = mapper.readValue(inputStream,
+                    new TypeReference<HashMap<String, Long>>() {
+                    });
+            synchronized (transferStateLock) {
+                transferredIntervalEnds.clear();
+                transferredIntervalEnds.putAll(loadedState);
+            }
+            log.info("Loaded transfer state for {} counting IDs from {}.", transferredIntervalEnds.size(), statePath);
+        } catch (IOException | JacksonException e) {
+            log.error("Error loading transfer state from {}", statePath, e);
+        }
+    }
+
+    private void persistTransferState() {
+        Path statePath = Path.of(transferStateFile);
+        Path absoluteStatePath = statePath.toAbsolutePath();
+        Path parent = absoluteStatePath.getParent();
+
+        try {
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+
+            Path tempPath = absoluteStatePath.resolveSibling(absoluteStatePath.getFileName() + ".tmp");
+            try (var outputStream = Files.newOutputStream(tempPath,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE)) {
+                mapper.writeValue(outputStream, transferredIntervalEnds);
+            }
+
+            try {
+                Files.move(tempPath, absoluteStatePath,
+                        StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tempPath, absoluteStatePath, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            log.error("Error persisting transfer state to {}", absoluteStatePath, e);
+        }
+    }
+
+    private boolean wasIntervalAlreadyTransferred(String countId, Instant intervalEnd) {
+        synchronized (transferStateLock) {
+            Long lastTransferredIntervalEnd = transferredIntervalEnds.get(countId);
+            return lastTransferredIntervalEnd != null && lastTransferredIntervalEnd >= intervalEnd.getEpochSecond();
+        }
+    }
+
+    private void markIntervalAsTransferred(String countId, Instant intervalEnd) {
+        synchronized (transferStateLock) {
+            long epochSecond = intervalEnd.getEpochSecond();
+            Long knownIntervalEnd = transferredIntervalEnds.get(countId);
+            if (knownIntervalEnd != null && knownIntervalEnd >= epochSecond) {
+                return;
+            }
+
+            transferredIntervalEnds.put(countId, epochSecond);
+            persistTransferState();
+        }
+    }
+
+    private TransferInterval determineTransferInterval(Instant referenceTime) {
+        long secondsInQuarter = Duration.ofMinutes(15).getSeconds();
+        long secondsToSubtract = referenceTime.getEpochSecond() % secondsInQuarter;
+        Instant intervalEnd = referenceTime.minusSeconds(secondsToSubtract).truncatedTo(ChronoUnit.SECONDS);
+        Instant intervalStart = intervalEnd.minus(Duration.ofMinutes(15));
+        Instant innerStart = intervalStart.minus(lookbackDuration);
+        return new TransferInterval(innerStart, intervalStart, intervalEnd);
     }
 
     private HashMap<String, Integer> initializeIntersectionMappingsFromFile() {
@@ -113,24 +204,35 @@ public class DataTransferService {
         }
         log.info("Transferring data...");
 
-        Map<String, List<CountResultPerType>> countResults = LoadMeasuredData();
+        TransferInterval transferInterval = determineTransferInterval(Instant.now());
+
+        Map<String, List<CountResultPerType>> countResults = loadMeasuredData(transferInterval);
         log.debug("Data to transfer: " + countResults.toString());
 
         countResults.keySet().forEach(k -> {
+            if (wasIntervalAlreadyTransferred(k, transferInterval.intervalEnd())) {
+                log.info("Skipping already transmitted interval ending {} for counting ID {}.",
+                        transferInterval.intervalEnd(), k);
+                return;
+            }
+
             log.info("Transferring data for counting ID: " + k);
-            prepareAndSendData(countResults.get(k), k);
+            if (prepareAndSendData(countResults.get(k), k)) {
+                markIntervalAsTransferred(k, transferInterval.intervalEnd());
+            }
         });
     }
 
-    public void prepareAndSendData(List<CountResultPerType> data, String countId) {
+    private boolean prepareAndSendData(List<CountResultPerType> data, String countId) {
         String body = serializeToJSON(data, countId);
         log.debug("Serialized data to JSON: " + body);
         if (body.equals("[]")) {
             log.info("No data to send for counting ID " + countId + ". Skipping transfer.");
-            return;
+            return false;
         }
         String response = authService.sendData(body, daveUrl);
         log.debug(response);
+        return true;
     }
 
     private String serializeToJSON(List<CountResultPerType> data, String countId) {
@@ -149,35 +251,23 @@ public class DataTransferService {
         return "[" + String.join(",", filteredData) + "]";
     }
 
-    private Map<String, List<CountResultPerType>> LoadMeasuredData() {
+    private Map<String, List<CountResultPerType>> loadMeasuredData(TransferInterval transferInterval) {
         Map<String, List<CountResultPerType>> result = new HashMap<>();
-
-        var now = Instant.now();
-
-        // Calculate how many seconds have passed since the start of the current
-        // 15-minute block
-        long secondsInQuarter = 15 * 60;
-        long secondsToSubtract = now.getEpochSecond() % secondsInQuarter;
-
-        // Subtract those seconds and clear nanoseconds to get the aligned interval
-        // boundaries
-        Instant lastQuarterEnd = now.minusSeconds(secondsToSubtract).truncatedTo(ChronoUnit.SECONDS);
-        Instant lastQuarterStart = lastQuarterEnd.minus(Duration.ofMinutes(15));
-        Instant innerStart = lastQuarterStart.minus(lookbackDuration);
 
         for (MeasureMapping measureMapping : measureMappings) {
             List<CountResults> cr = analyticsRepository.getCountings(
-                    Long.parseLong(measureMapping.getObservationAreaId()), innerStart, lastQuarterStart,
-                    lastQuarterEnd);
+                    Long.parseLong(measureMapping.getObservationAreaId()), transferInterval.innerStart(),
+                    transferInterval.intervalStart(), transferInterval.intervalEnd());
             log.debug("Data from analytics repository: " + cr.toString());
 
             List<CountResultPerType> convertedToRow = mapToRowResult(measureMapping, cr,
-                    lastQuarterStart, lastQuarterEnd);
+                    transferInterval.intervalStart(), transferInterval.intervalEnd());
             log.debug("Converted data to DAVe format: " + convertedToRow.toString());
             if (convertedToRow.isEmpty()) {
                 log.info("No data for counting ID " + measureMapping.getDaveCountingId()
                         + " in the last interval. Creating empty data.");
-                convertedToRow = createEmptyData(measureMapping.getDaveCountingId(), lastQuarterStart, lastQuarterEnd);
+                convertedToRow = createEmptyData(measureMapping.getDaveCountingId(), transferInterval.intervalStart(),
+                        transferInterval.intervalEnd());
             }
             result.put(measureMapping.getDaveCountingId(), convertedToRow);
         }
@@ -279,5 +369,8 @@ public class DataTransferService {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    private record TransferInterval(Instant innerStart, Instant intervalStart, Instant intervalEnd) {
     }
 }
