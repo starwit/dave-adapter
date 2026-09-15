@@ -194,7 +194,7 @@ public class DataTransferService {
                 String first = keys.iterator().next();
                 Integer daveDirection = findFirstNonEmptyMapping(first, mappings);
                 CountResultPerType emptyResult = new CountResultPerType(countId, start, end, daveDirection,
-                        daveDirection, 0, 0, 0, 0, 0, 0);
+                        daveDirection, 0, 0, 0, 0, 0, 0, 0);
                 emptyData.add(emptyResult);
             }
         }
@@ -226,6 +226,7 @@ public class DataTransferService {
             int lkw = 0;
             int busse = 0;
             int kraftraeder = 0;
+            int lastzuege = 0;
             int fahrradfahrer = 0;
             int fussgaenger = 0;
 
@@ -256,7 +257,7 @@ public class DataTransferService {
             }
             CountResultPerType crpt = new CountResultPerType(measureMapping.getDaveCountingId(), start, end, dave_von,
                     dave_nach, pkw, lkw,
-                    busse, kraftraeder, fahrradfahrer, fussgaenger);
+                    busse, kraftraeder, lastzuege, fahrradfahrer, fussgaenger);
             result.add(crpt);
         }
 

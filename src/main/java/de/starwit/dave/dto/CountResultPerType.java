@@ -37,6 +37,9 @@ public class CountResultPerType {
     @JsonProperty("kraftraeder")
     private int kraftraeder;
 
+    @JsonProperty("lastzuege")
+    private int lastzuege;
+
     @JsonProperty("fahrradfahrer")
     private int fahrradfahrer;
 
@@ -44,7 +47,7 @@ public class CountResultPerType {
     private int fussgaenger;
 
     public CountResultPerType(String countingId, Instant start, Instant end, Integer from, Integer to, int pkw, int lkw,
-            int busse, int kraftraeder, int fahrradfahrer, int fussgaenger) {
+            int busse, int kraftraeder, int lastzuege, int fahrradfahrer, int fussgaenger) {
         this.countingId = countingId;
         this.start = start;
         this.end = end;
@@ -54,6 +57,7 @@ public class CountResultPerType {
         this.lkw = lkw;
         this.busse = busse;
         this.kraftraeder = kraftraeder;
+        this.lastzuege = lastzuege;
         this.fahrradfahrer = fahrradfahrer;
         this.fussgaenger = fussgaenger;
     }

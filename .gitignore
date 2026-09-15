@@ -52,3 +52,4 @@ buildNumber.properties
 # Spring Boot
 spring-boot-*.log
 application.properties
+Mapping-local.json
