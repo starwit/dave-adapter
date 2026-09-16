@@ -12,6 +12,8 @@ services:
       POSTGRES_PASSWORD: analytics
       POSTGRES_USER: analytics
       POSTGRES_DB: analytics
+      TZ: Europe/Berlin
+      PGTZ: Europe/Berlin
     volumes:
       - ./timescaledb-data:/docker-entrypoint-initdb.d
 

@@ -55,5 +55,4 @@ application.properties
 Mapping-local.json
 
 # database dumps
-*.sql
 *.dump
