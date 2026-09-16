@@ -1,0 +1,19 @@
+# timescale with data import
+
+name: dave-adapter-dev-setup
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg18-oss
+    container_name: timescaledb
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_PASSWORD: analytics
+      POSTGRES_USER: analytics
+      POSTGRES_DB: analytics
+    volumes:
+      - ./timescaledb-data:/docker-entrypoint-initdb.d
+
+volumes:
+  timescaledb-data:

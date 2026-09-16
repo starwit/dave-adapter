@@ -127,3 +127,37 @@ Optionally the following components are helpful for testing:
 * [Starwit Awareness Engine/Valkey](https://github.com/starwit/starwit-awareness-engine) - get live counting data
 * Keycloak - test authentication
 
+### Database Query
+In order to make development easier here is a sample query with actual values.
+
+```sql
+select
+	count(r.object_id) as count,
+	r.object_class_id as object_class_id,
+	r.compass_dir_from as compass_dir_from,
+	r.compass_dir_to as compass_dir_to
+from (
+	select
+		observation_area_id,
+		object_id,
+		object_class_id,
+		first_value(l.crossing_time) over w_time as min_time,
+		last_value(l.crossing_time) over w_time as max_time,
+		first_value(m.direction) over w_time as compass_dir_from,
+		last_value(m.direction) over w_time as compass_dir_to,
+		first_value(l.direction) over w_time as dir_from,
+		last_value(l.direction) over w_time as dir_to,
+		count(object_id) over w_time as idx
+	from linecrossing l
+		join metadata m on l.metadata_id = m.id
+	where l.crossing_time >= '2026-09-16 07:00:00.000+00' and l.crossing_time <= '2026-09-16 07:15:00.000+00'
+		and observation_area_id = 14
+	window
+		w_time as (partition by object_id order by l.crossing_time asc)
+) r
+where r.max_time >= '2026-09-16 06:55:00.000+00'
+	and r.compass_dir_from <> r.compass_dir_to
+	and r.dir_from = 'in' and r.dir_to = 'out'
+group by r.object_class_id, r.compass_dir_from, r.compass_dir_to;
+```
+

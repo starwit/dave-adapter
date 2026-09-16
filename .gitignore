@@ -53,3 +53,7 @@ buildNumber.properties
 spring-boot-*.log
 application.properties
 Mapping-local.json
+
+# database dumps
+*.sql
+*.dump
