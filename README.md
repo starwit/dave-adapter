@@ -119,6 +119,7 @@ Once all steps ran successfully application will be reachable with the following
 
 In order to develop adapter needs the following components:
 * [Observatory/Analytics DB](https://github.com/starwit/observatory) - source data
+* Run script [__run_sample_analytics.sh__](deployment/docker-compose/run_sample_analytics.sh) for a sample analytics database, that contains timeshifted sample data.
 * [DAVe Backend](https://github.com/starwit/dave-backend) - target environment
 
 Optionally the following components are helpful for testing:
