@@ -12,6 +12,7 @@ The following table lists the configurable parameters of the Dave Adapter chart 
 | `app.dave_url` | URL for DAVe backend | `http://localhost:8080/detector/save-latest-detections` |
 | `app.mapping.file` | Mapping configuration file name | `mapping.json` |
 | `app.mapping.content` | Mapping configuration content (JSON) | See values.yaml |
+| `app.correct.bicycle` | corrects pedestrian counts - minus one human per moving bicycle  | `true` |
 | `analytics_db.url` | Analytics database JDBC URL | `jdbc:postgresql://localhost:5432/analytics` |
 | `analytics_db.username` | Analytics database username | `analytics` |
 | `analytics_db.password` | Analytics database password | `analytics` |
@@ -51,13 +52,7 @@ The `app.mapping.content` parameter accepts a JSON array defining observation ar
 [
   {
     "observationAreaId": "9",
-    "daveCountingId": "fa6060bd-c170-40e4-9ee8-c704a526ef9d",
-    "intersectionMapping": {
-      "dave-meckauer-nordost": "1",
-      "dave-meckauer-nordwest": "2",
-      "dave-meckauer-sued": "3",
-      "dave-meckauer-ost": "4"
-    }
+    "daveCountingId": "fa6060bd-c170-40e4-9ee8-c704a526ef9d"
   }
 ]
 ```

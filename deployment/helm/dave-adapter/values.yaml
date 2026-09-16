@@ -35,6 +35,8 @@ app:
     intersection: classpath:defaultIntersectionMapping.json
   auth: 
     enabled: true
+  correct:
+    bicycle: true
 
 service:
   port: 8080

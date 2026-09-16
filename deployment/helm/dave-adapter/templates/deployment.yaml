@@ -53,6 +53,8 @@ spec:
             {{- end }}
             - name: APP_DAVE_URL
               value: {{ .Values.app.dave_url }}
+            - name: APP.CORRECT.BICYCLE
+              value: {{ .Values.app.correct.bicycle | quote }}
             - name: APP_MAPPING
               value: "file:/app/config/mapping.json"
             - name: APP_MAPPING_INTERSECTION

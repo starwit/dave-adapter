@@ -56,6 +56,9 @@ public class DataTransferService {
     @Value("${app.lookback_duration:1m}")
     private Duration lookbackDuration;
 
+    @Value("${app.correct.bicycle:true}")
+    private boolean correctBicycles;
+
     private List<MeasureMapping> measureMappings = new ArrayList<>();
 
     @PostConstruct
@@ -114,12 +117,24 @@ public class DataTransferService {
         log.info("Transferring data...");
 
         Map<String, List<CountResultPerType>> countResults = LoadMeasuredData();
+        if(correctBicycles) {
+            correctBiCycleError(countResults);
+        }
+        
         log.debug("Data to transfer: " + countResults.toString());
 
         countResults.keySet().forEach(k -> {
             log.info("Transferring data for counting ID: " + k);
             prepareAndSendData(countResults.get(k), k);
         });
+    }
+
+    // workaround for lacking observatory capability to track human/bicycle as one object
+    private void correctBiCycleError(Map<String, List<CountResultPerType>> countResults) {
+        //subtract bicycles from pedestrian count - every moving bicycle also has a human riding it
+        log.debug("Adapt pedestrian count");
+        countResults.values().forEach(list -> 
+                list.forEach(row -> row.setFussgaenger(row.getFussgaenger()-row.getFahrradfahrer())));
     }
 
     public void prepareAndSendData(List<CountResultPerType> data, String countId) {
