@@ -77,6 +77,8 @@ app.dave.url=http://localhost:8080/detector/save-latest-detections
 app.mapping=file:./sampleMapping.json
 # if true adapter gets auth token for requests to DAVe 
 app.auth.enabled=true
+# if true per moving bicycle number of humans is decreased
+app.correct.bicycle=true
 
 # Config to access protected DAVe instance
 spring.security.oauth2.client.registration.daveclient.provider=daveprovider
