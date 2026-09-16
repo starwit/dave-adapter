@@ -77,6 +77,8 @@ app.dave.url=http://localhost:8080/detector/save-latest-detections
 app.mapping=file:./sampleMapping.json
 # if true adapter gets auth token for requests to DAVe 
 app.auth.enabled=true
+# if true per moving bicycle number of humans is decreased
+app.correct.bicycle=true
 
 # Config to access protected DAVe instance
 spring.security.oauth2.client.registration.daveclient.provider=daveprovider
@@ -119,6 +121,7 @@ Once all steps ran successfully application will be reachable with the following
 
 In order to develop adapter needs the following components:
 * [Observatory/Analytics DB](https://github.com/starwit/observatory) - source data
+* Run script [__run_sample_analytics.sh__](deployment/docker-compose/run_sample_analytics.sh) for a sample analytics database, that contains timeshifted sample data.
 * [DAVe Backend](https://github.com/starwit/dave-backend) - target environment
 
 Optionally the following components are helpful for testing:
@@ -126,4 +129,38 @@ Optionally the following components are helpful for testing:
 * [Observatory Config](https://github.com/starwit/observatory-config) - get active counting configurations
 * [Starwit Awareness Engine/Valkey](https://github.com/starwit/starwit-awareness-engine) - get live counting data
 * Keycloak - test authentication
+
+### Database Query
+In order to make development easier here is a sample query with actual values.
+
+```sql
+select
+	count(r.object_id) as count,
+	r.object_class_id as object_class_id,
+	r.compass_dir_from as compass_dir_from,
+	r.compass_dir_to as compass_dir_to
+from (
+	select
+		observation_area_id,
+		object_id,
+		object_class_id,
+		first_value(l.crossing_time) over w_time as min_time,
+		last_value(l.crossing_time) over w_time as max_time,
+		first_value(m.direction) over w_time as compass_dir_from,
+		last_value(m.direction) over w_time as compass_dir_to,
+		first_value(l.direction) over w_time as dir_from,
+		last_value(l.direction) over w_time as dir_to,
+		count(object_id) over w_time as idx
+	from linecrossing l
+		join metadata m on l.metadata_id = m.id
+	where l.crossing_time >= '2026-09-16 07:00:00.000+00' and l.crossing_time <= '2026-09-16 07:15:00.000+00'
+		and observation_area_id = 14
+	window
+		w_time as (partition by object_id order by l.crossing_time asc)
+) r
+where r.max_time >= '2026-09-16 06:55:00.000+00'
+	and r.compass_dir_from <> r.compass_dir_to
+	and r.dir_from = 'in' and r.dir_to = 'out'
+group by r.object_class_id, r.compass_dir_from, r.compass_dir_to;
+```
 
