@@ -135,9 +135,9 @@ public class DataTransferService {
         log.debug("Adapt pedestrian count");
         countResults.values().forEach(list -> 
                 list.forEach(row -> {
-                        int fussgaenger = 0;
-                        if(row.getFahrradfahrer()-row.getFahrradfahrer() >= 0) {
-                           fussgaenger = row.getFahrradfahrer()-row.getFahrradfahrer();
+                        int fussgaenger = row.getFahrradfahrer() - row.getFahrradfahrer();
+                        if(fussgaenger <= 0) {
+                           fussgaenger = 0;
                         }
                         row.setFussgaenger(fussgaenger);
                     }));
