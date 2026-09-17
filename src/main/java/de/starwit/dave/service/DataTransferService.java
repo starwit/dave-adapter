@@ -134,7 +134,13 @@ public class DataTransferService {
         //subtract bicycles from pedestrian count - every moving bicycle also has a human riding it
         log.debug("Adapt pedestrian count");
         countResults.values().forEach(list -> 
-                list.forEach(row -> row.setFussgaenger(row.getFussgaenger()-row.getFahrradfahrer())));
+                list.forEach(row -> {
+                        int fussgaenger = row.getFahrradfahrer() - row.getFahrradfahrer();
+                        if(fussgaenger <= 0) {
+                           fussgaenger = 0;
+                        }
+                        row.setFussgaenger(fussgaenger);
+                    }));
     }
 
     public void prepareAndSendData(List<CountResultPerType> data, String countId) {
